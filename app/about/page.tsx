@@ -1,11 +1,10 @@
-// app/page.tsx
 import AboutHero from "../components/about/AboutHero";
 import VisionMissionCard from "../components/about/VisionMissionCard";
 import FeatureCard from "../components/about/FeatureCard";
 
 export default function AboutPage() {
   return (
-    <div className="container mx-auto px-4 py-12 space-y-16">
+    <div className="container mx-auto px-4 py-12 space-y-12">
       
       {/* Hero Section */}
       <AboutHero
@@ -13,7 +12,7 @@ export default function AboutPage() {
         description="At DigiDwell, we specialize in delivering high-quality tech solutions that are affordable and reliable. From software installation to system upgrades, graphic design, and tech consulting, we help individuals and businesses optimize their technology experience."
       />
 
-      {/* Vision & Mission Section */}
+      {/* Vision & Mission */}
       <section className="grid md:grid-cols-2 gap-8">
         <VisionMissionCard
           title="Our Vision"
@@ -25,8 +24,8 @@ export default function AboutPage() {
         />
       </section>
 
-      {/* Why Choose Us Section */}
-      <section className="space-y-8">
+      {/* Why Choose Us */}
+      <section className="space-y-6">
         <h2 className="text-3xl font-bold text-center">Why Choose DigiDwell?</h2>
         <div className="grid md:grid-cols-3 gap-6">
           <FeatureCard
