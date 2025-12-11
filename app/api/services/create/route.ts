@@ -1,22 +1,14 @@
-// app/api/services/create/route.ts
-import { NextResponse } from "next/server";
-import { mockServices } from "../mockdata";
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
-export async function POST(req: Request) {
-  const { title, description, price } = await req.json();
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const { title, description, price } = body;
 
   if (!title || !description || !price) {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  const newService = {
-    id: `s${mockServices.length + 1}`,
-    title,
-    description,
-    price,
-  };
-
-  mockServices.push(newService);
-
-  return NextResponse.json({ service: newService, message: "Service created successfully" });
+  const service = await prisma.service.create({ data: { title, description, price } });
+  return NextResponse.json(service);
 }

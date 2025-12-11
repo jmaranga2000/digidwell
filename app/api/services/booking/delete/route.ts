@@ -1,17 +1,13 @@
-// app/api/services/booking/delete/route.ts
-import { mockBookings } from "@/lib/mockBooking";
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
-export async function POST(req: Request) {
-  const { bookingId } = await req.json();
-  const index = mockBookings.findIndex(b => b.id === bookingId);
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const { id } = params;
 
-  if (index === -1) {
-    return new Response(JSON.stringify({ error: "Booking not found" }), { status: 404 });
+  try {
+    await prisma.booking.delete({ where: { id } });
+    return NextResponse.json({ message: "Booking deleted successfully" });
+  } catch (err) {
+    return NextResponse.json({ error: "Booking not found or cannot delete" }, { status: 404 });
   }
-
-  const deleted = mockBookings.splice(index, 1)[0];
-
-  return new Response(JSON.stringify({ booking: deleted }), {
-    headers: { "Content-Type": "application/json" },
-  });
 }

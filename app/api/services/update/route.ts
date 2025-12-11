@@ -1,18 +1,17 @@
-// app/api/services/update/route.ts
-import { NextResponse } from "next/server";
-import { mockServices } from "../mockdata";
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
-export async function PUT(req: Request) {
-  const { id, title, description, price } = await req.json();
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const { id } = params;
+  const updates = await req.json();
 
-  if (!id || !title || !description || !price) {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  try {
+    const service = await prisma.service.update({
+      where: { id },
+      data: updates,
+    });
+    return NextResponse.json(service);
+  } catch (err) {
+    return NextResponse.json({ error: "Service not found or cannot update" }, { status: 404 });
   }
-
-  const index = mockServices.findIndex(s => s.id === id);
-  if (index === -1) return NextResponse.json({ error: "Service not found" }, { status: 404 });
-
-  mockServices[index] = { id, title, description, price };
-
-  return NextResponse.json({ service: mockServices[index], message: "Service updated successfully" });
 }

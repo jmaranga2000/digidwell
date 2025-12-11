@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST() {
-  // Mock clearing session
-  return NextResponse.json({ success: true, message: "Logged out successfully" });
+export async function POST(req: NextRequest) {
+  const response = NextResponse.json({ message: "Logged out successfully" });
+  response.cookies.set("token", "", { httpOnly: true, path: "/", maxAge: 0 });
+  return response;
 }

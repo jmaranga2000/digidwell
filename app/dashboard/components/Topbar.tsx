@@ -1,37 +1,45 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getMockSession, Session } from "@/lib/mockSession";
+import { Button } from "@/components/ui/button";
 
-interface TopbarProps {
-  setSidebarOpen: (open: boolean) => void;
+interface User {
+  id: string;
+  name: string;
+  email: string;
 }
 
-export default function Topbar({ setSidebarOpen }: TopbarProps) {
-  const [session, setSession] = useState<Session | null>(null);
+export default function Topbar() {
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const s = getMockSession();
-    setSession(s);
+    async function fetchSession() {
+      const res = await fetch("/api/auth/session");
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+      }
+    }
+    fetchSession();
   }, []);
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setUser(null);
+    location.reload();
+  }
 
   return (
     <div className="topbar">
-      <button
-        onClick={() => setSidebarOpen(prev => !prev)}
-        className="btn-primary"
-      >
-        Toggle Sidebar
-      </button>
-
-      <div className="flex items-center gap-4">
-        {session ? (
+      <div>Dashboard</div>
+      <div className="flex gap-4 items-center">
+        {user ? (
           <>
-            <p className="font-semibold">{session.user.name}</p>
-            <span className="pill">{session.user.role}</span>
+            <span>Welcome, {user.name}</span>
+            <Button onClick={handleLogout}>Logout</Button>
           </>
         ) : (
-          <p>Not logged in</p>
+          <span>Not logged in</span>
         )}
       </div>
     </div>

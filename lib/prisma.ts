@@ -1,5 +1,5 @@
 // lib/prisma.ts
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@/lib/generated/prisma/client";
 
 declare global {
   var prisma: PrismaClient | undefined;
@@ -8,6 +8,7 @@ declare global {
 const prisma =
   global.prisma ||
   new PrismaClient({
+    accelerateUrl: process.env.PRISMA_ACCELERATE_URL || "",
     log: ["query", "info", "warn", "error"],
   });
 

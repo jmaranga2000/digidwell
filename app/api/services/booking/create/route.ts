@@ -6,24 +6,19 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser(req);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { serviceId, notes, preferredDate } = await req.json();
+  const { serviceId, notes } = await req.json();
 
   if (!serviceId)
     return NextResponse.json({ error: "Missing serviceId" }, { status: 400 });
 
-  // Create a service request instead of immediate booking
-  const serviceRequest = await prisma.serviceRequest.create({
+  const booking = await prisma.booking.create({
     data: {
       serviceId,
       customerId: user.id,
       notes,
-      preferredDate: preferredDate || null,
-      status: "Pending", // Admin must approve or schedule
+      status: "Pending",
     },
   });
 
-  return NextResponse.json({
-    message: "Service request submitted successfully",
-    request: serviceRequest,
-  });
+  return NextResponse.json(booking);
 }

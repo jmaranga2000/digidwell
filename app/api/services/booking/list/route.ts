@@ -1,15 +1,15 @@
-// app/api/services/booking/list/route.ts
-import { mockBookings } from "@/lib/mockBooking";
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const email = url.searchParams.get("email");
+export async function GET(req: NextRequest) {
+  const customerId = req.nextUrl.searchParams.get("customerId");
 
-  const bookings = email
-    ? mockBookings.filter(b => b.customerEmail === email)
-    : mockBookings;
+  const whereClause = customerId ? { customerId } : undefined;
 
-  return new Response(JSON.stringify({ bookings }), {
-    headers: { "Content-Type": "application/json" },
+  const bookings = await prisma.booking.findMany({
+    where: whereClause,
+    include: { service: true },
   });
+
+  return NextResponse.json({ bookings });
 }

@@ -1,14 +1,12 @@
-// app/api/services/delete/route.ts
-import { NextResponse } from "next/server";
-import { mockServices } from "../mockdata";
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
-export async function DELETE(req: Request) {
-  const { id } = await req.json();
-
-  const index = mockServices.findIndex(s => s.id === id);
-  if (index === -1) return NextResponse.json({ error: "Service not found" }, { status: 404 });
-
-  const deleted = mockServices.splice(index, 1);
-
-  return NextResponse.json({ service: deleted[0], message: "Service deleted successfully" });
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const { id } = params;
+  try {
+    await prisma.service.delete({ where: { id } });
+    return NextResponse.json({ message: "Service deleted successfully" });
+  } catch (err) {
+    return NextResponse.json({ error: "Service not found or cannot delete" }, { status: 404 });
+  }
 }

@@ -1,52 +1,33 @@
 // lib/auth.ts
-import prisma from "./prisma";
+import { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
-import { cookies } from "next/headers";
+import prisma from "./prisma";
 
-const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key";
-const TOKEN_EXPIRES = "7d";
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
-// Hash password before saving
-export async function hashPassword(password: string) {
-  return await bcrypt.hash(password, 10);
-}
+export async function getCurrentUser(req: NextRequest) {
+  const token = req.cookies.get("token")?.value;
 
-// Compare password on login
-export async function comparePassword(password: string, hashedPassword: string) {
-  return await bcrypt.compare(password, hashedPassword);
-}
+  if (!token) return null;
 
-// Generate JWT token
-export function signToken(payload: any) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRES });
-}
-
-// Verify JWT token
-export function verifyToken(token: string) {
   try {
-    return jwt.verify(token, JWT_SECRET) as any;
-  } catch (err) {
-    return null;
-  }
-}
-
-// Extract current user from cookie
-export async function getCurrentUser() {
-  try {
-    const token = cookies().get("token")?.value;
-    if (!token) return null;
-
-    const decoded = verifyToken(token);
-    if (!decoded || !decoded.id) return null;
-
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: { id: true, email: true, name: true, role: true },
-    });
-
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const user = await prisma.user.findUnique({ where: { id: payload.userId } });
     return user || null;
   } catch (err) {
     return null;
   }
+}
+
+// Optional: Middleware for API protection
+import type { User } from "@prisma/client";
+
+export function requireAuth(
+  handler: (req: NextRequest, user: User, ...args: unknown[]) => Promise<Response>
+) {
+  return async (req: NextRequest, ...args: unknown[]) => {
+    const user = await getCurrentUser(req);
+    if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    return handler(req, user, ...args);
+  };
 }

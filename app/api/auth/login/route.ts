@@ -1,19 +1,34 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
-export async function POST(req: Request) {
-  const { email, password } = await req.json();
+const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
-  // Mock login logic
-  if (email && password) {
-    return NextResponse.json({
-      success: true,
-      user: {
-        email,
-        role: email === "admin@example.com" ? "admin" : "customer",
-        name: "John Doe",
-      },
-    });
+export async function POST(req: NextRequest) {
+  try {
+    const { email, password } = await req.json();
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
+
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
+
+    const response = NextResponse.json({ message: "Login successful", user: { id: user.id, email: user.email, name: user.name } });
+
+    // Set cookie
+    response.cookies.set("token", token, { httpOnly: true, path: "/", maxAge: 60 * 60 * 24 * 7 });
+
+    return response;
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Login failed" }, { status: 500 });
   }
-
-  return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 });
 }

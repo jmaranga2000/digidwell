@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
-import { mockBookings } from "@/lib/mockBookings";
+import prisma from "@/lib/prisma";
 
 export async function GET() {
-  return NextResponse.json({ success: true, bookings: mockBookings });
+  const bookings = await prisma.booking.findMany({
+    include: { service: true, customer: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return NextResponse.json({ bookings });
 }

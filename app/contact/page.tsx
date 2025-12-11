@@ -1,77 +1,95 @@
-"use client";
-
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-
 export default function ContactPage() {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    subject: "",
-    message: "",
-    file: null as File | null,
-  });
-  const [loading, setLoading] = useState(false);
-
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  }
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.files && e.target.files[0]) {
-      setForm({ ...form, file: e.target.files[0] });
-    } else {
-      setForm({ ...form, file: null });
-    }
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      // Mock API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Simulate success or failure
-      const isSuccess = Math.random() > 0.1; // 90% success
-      if (!isSuccess) {
-        throw new Error("Failed to submit form (mock).");
-      }
-
-      toast.success("Message sent successfully!");
-      setForm({ name: "", email: "", subject: "", message: "", file: null });
-    } catch (error: any) {
-      toast.error(error.message || "Unexpected error. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
-    <div className="container mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold mb-6">Contact Us</h1>
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow max-w-lg mx-auto"
-      >
-        <Input name="name" placeholder="Name" value={form.name} onChange={handleChange} required />
-        <Input name="email" placeholder="Email" type="email" value={form.email} onChange={handleChange} required />
-        <Input name="subject" placeholder="Subject" value={form.subject} onChange={handleChange} />
-        <Textarea name="message" placeholder="Message" value={form.message} onChange={handleChange} />
-        <Input type="file" accept=".doc,.pdf,.jpg" onChange={handleFileChange} />
-        {form.file && (
-          <p className="text-sm text-gray-500 dark:text-gray-300">
-            Selected file: <span className="font-semibold">{form.file.name}</span>
+    <main className="px-4 md:px-8 py-12 space-y-12">
+
+      {/* PAGE TITLE */}
+      <section className="text-center space-y-4">
+        <h1 className="text-4xl md:text-5xl font-bold">
+          Contact Us
+        </h1>
+        <p style={{ color: "var(--foreground)" }} className="max-w-2xl mx-auto">
+          We're here to assist you. Fill out the form below and our support team will respond shortly.
+        </p>
+      </section>
+
+      {/* CONTACT GRID */}
+      <section className="grid md:grid-cols-2 gap-10">
+
+        {/* CONTACT FORM */}
+        <div className="p-6 rounded-2xl glass shadow space-y-6">
+
+          <div>
+            <label className="block font-semibold mb-2">
+              Full Name
+            </label>
+            <input
+              type="text"
+              placeholder="Enter your name"
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold mb-2">
+              Email Address
+            </label>
+            <input
+              type="email"
+              placeholder="example@email.com"
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold mb-2">
+              Message
+            </label>
+            <textarea
+              placeholder="Write your message here..."
+              rows={5}
+              className="w-full"
+            ></textarea>
+          </div>
+
+          <button className="btn-primary w-full">
+            Send Message
+          </button>
+        </div>
+
+        {/* CONTACT INFORMATION */}
+        <div className="p-6 rounded-2xl glass shadow space-y-6">
+          <h2 className="text-2xl font-semibold">
+            Get in Touch
+          </h2>
+
+          <p style={{ color: "var(--foreground)" }}>
+            You can also reach us directly through the following channels.
           </p>
-        )}
-        <Button type="submit" disabled={loading}>
-          {loading ? "Sending..." : "Send Message"}
-        </Button>
-      </form>
-    </div>
+
+          <ul className="space-y-3">
+            <li>
+              <strong>Email:</strong> support@digidwelltech.com
+            </li>
+            <li>
+              <strong>Phone:</strong> +254 750 468 852
+            </li>
+            <li>
+              <strong>Office Hours:</strong> Mon – Sat, 8:00am – 6:00pm
+            </li>
+          </ul>
+
+          <div className="rounded-xl overflow-hidden">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18..."
+              width="100%"
+              height="250"
+              style={{ border: 0 }}
+              loading="lazy"
+            ></iframe>
+          </div>
+        </div>
+
+      </section>
+    </main>
   );
 }

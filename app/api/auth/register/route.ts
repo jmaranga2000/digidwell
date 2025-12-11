@@ -1,16 +1,29 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import bcrypt from "bcrypt";
 
-export async function POST(req: Request) {
-  const { name, email, password } = await req.json();
+export async function POST(req: NextRequest) {
+  try {
+    const { name, email, password } = await req.json();
 
-  if (name && email && password) {
-    // Mock creating a user
-    return NextResponse.json({
-      success: true,
-      message: "Registration successful",
-      user: { name, email, role: "customer" },
+    if (!name || !email || !password) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return NextResponse.json({ error: "Email already registered" }, { status: 400 });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: { name, email, password: hashedPassword },
     });
-  }
 
-  return NextResponse.json({ success: false, error: "Missing fields" }, { status: 400 });
+    return NextResponse.json({ message: "User registered successfully", user: { id: user.id, email: user.email, name: user.name } });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Registration failed" }, { status: 500 });
+  }
 }
