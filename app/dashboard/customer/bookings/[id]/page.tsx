@@ -1,76 +1,55 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import BookingCard from "@/dashboard/components/BookingCard";
-import PayWithMpesa from "@/components/PayWithMpesa";
-import { toast } from "sonner";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 type Booking = {
   id: string;
-  serviceTitle: string;
-  customerName: string;
-  customerEmail: string;
-  status: "Pending" | "Confirmed" | "Cancelled";
-  price: number;
+  note: string;
+  date: string;
+  service: { id: string; title: string; description: string; price: number };
 };
 
-export default function CustomerBookingDetail() {
-  const params = useParams();
-  const bookingId = params.id as string;
-  const router = useRouter();
-
+export default function CustomerBookingPage() {
+  const { id } = useParams();
   const [booking, setBooking] = useState<Booking | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  // Fetch booking info (mock API for now)
+  // Fetch booking details
+  const fetchBooking = async () => {
+    const res = await fetch(`/api/services/booking/${id}`);
+    const data = await res.json();
+    setBooking(data);
+  };
+
   useEffect(() => {
-    async function fetchBooking() {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/services/booking/${bookingId}`);
-        const data = await res.json();
+    if (id) fetchBooking();
+  }, [id]);
 
-        if (!res.ok) {
-          toast.error(data.error || "Booking not found.");
-          return;
-        }
+  // Cancel booking
+  const handleCancel = async () => {
+    if (!confirm("Are you sure you want to cancel this booking?")) return;
+    await fetch(`/api/services/booking/delete/${id}`, { method: "DELETE" });
+    alert("Booking cancelled successfully.");
+    setBooking(null);
+  };
 
-        setBooking(data.booking);
-      } catch (error) {
-        toast.error("Failed to fetch booking.");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchBooking();
-  }, [bookingId]);
-
-  if (loading) return <p>Loading booking...</p>;
-  if (!booking) return <p>Booking not found.</p>;
+  if (!booking) return <p className="p-6">Loading or booking not found...</p>;
 
   return (
-    <div className="max-w-3xl mx-auto py-12 px-4 space-y-8">
-      <BookingCard
-        id={booking.id}
-        serviceTitle={booking.serviceTitle}
-        customerName={booking.customerName}
-        customerEmail={booking.customerEmail}
-        status={booking.status}
-      />
+    <div className="p-6 max-w-3xl mx-auto">
+      <h1 className="text-3xl font-bold mb-4">{booking.service.title}</h1>
+      <p className="mb-2">{booking.service.description}</p>
+      <p className="mb-2 font-semibold">Price: ${booking.service.price.toFixed(2)}</p>
+      <p className="mb-2">Booking Date: {new Date(booking.date).toLocaleDateString()}</p>
+      <p className="mb-4">Note: {booking.note}</p>
 
-      {/* Show payment only if status is confirmed and not paid (mock logic) */}
-      {booking.status === "Confirmed" && (
-        <PayWithMpesa
-          bookingId={booking.id}
-          amount={booking.price}
-          onPaymentSuccess={() => {
-            toast.success("Payment recorded successfully!");
-            router.push("/dashboard/customer");
-          }}
-        />
-      )}
+      <Button
+        className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+        onClick={handleCancel}
+      >
+        Cancel Booking
+      </Button>
     </div>
   );
 }

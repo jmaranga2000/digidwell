@@ -1,24 +1,59 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { initiateStkPush } from "@/lib/mpesaUtils";
 
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser(req);
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const body = await req.json();
+    const { serviceId, userId } = body;
 
-  const { serviceId, notes } = await req.json();
+    if (!serviceId || !userId) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
 
-  if (!serviceId)
-    return NextResponse.json({ error: "Missing serviceId" }, { status: 400 });
+    // Get service details
+    const service = await prisma.service.findUnique({
+      where: { id: serviceId },
+    });
 
-  const booking = await prisma.booking.create({
-    data: {
-      serviceId,
-      customerId: user.id,
-      notes,
-      status: "Pending",
-    },
-  });
+    if (!service) {
+      return NextResponse.json({ error: "Service not found" }, { status: 404 });
+    }
 
-  return NextResponse.json(booking);
+    // Create a booking in the DB with PENDING status
+    const booking = await prisma.booking.create({
+      data: {
+        serviceId,
+        userId,
+        amount: service.price,
+        status: "PENDING",
+      },
+    });
+
+    // Initiate M-Pesa payment
+    const stkResponse = await initiateStkPush({
+      amount: service.price,
+      phoneNumber: body.phoneNumber, // send user phone
+      accountReference: `Booking-${booking.id}`,
+      transactionDesc: `Payment for ${service.title}`,
+    });
+
+    // Save CheckoutRequestID for tracking
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: { checkoutRequestId: stkResponse.CheckoutRequestID },
+    });
+
+    return NextResponse.json({
+      message: "Booking created and payment initiated",
+      booking,
+      stkResponse,
+    });
+  } catch (error: any) {
+    console.error(error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }

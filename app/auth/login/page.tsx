@@ -1,61 +1,59 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { mockLogin } from "@/lib/mockSession";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  async function handleLogin(e: React.FormEvent) {
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
+
+  async function onSubmit(e: any) {
     e.preventDefault();
-    setLoading(true);
 
-    try {
-      const user = mockLogin(email);
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify(form),
+    });
 
-      toast.success(`Logged in as ${user.role}`);
+    const data = await res.json();
 
-      // Redirect based on role
-      if (user.role === "admin") {
-        router.push("/dashboard/admin");
-      } else {
-        router.push("/dashboard/customer");
-      }
-    } catch (error) {
-      toast.error("Unable to login. Try again.");
-    } finally {
-      setLoading(false);
-    }
+    if (!res.ok) return toast.error(data.error);
+
+    toast.success("Logged in");
+    router.push("/dashboard");
   }
 
   return (
-    <div className="container mx-auto max-w-md py-16">
-      <h1 className="text-3xl font-bold mb-6 text-center">Login</h1>
+    <div className="min-h-screen grid place-items-center">
+      <form
+        onSubmit={onSubmit}
+        className="bg-gray-900 p-6 rounded-xl border border-gray-700 w-full max-w-md space-y-4"
+      >
+        <h1 className="text-xl font-bold">Login</h1>
 
-      <form onSubmit={handleLogin} className="space-y-4 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow">
-        <div>
-          <label className="block mb-1 font-semibold">Email</label>
-          <Input 
-            type="email" 
-            placeholder="Enter your email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required 
-          />
-          <p className="text-xs mt-1 text-gray-600">
-            Use any email. If it contains "admin", you will login as admin.
-          </p>
-        </div>
+        <input
+          className="w-full p-3 rounded bg-gray-800"
+          placeholder="Email"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+        />
 
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
-        </Button>
+        <input
+          className="w-full p-3 rounded bg-gray-800"
+          type="password"
+          placeholder="Password"
+          value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
+        />
+
+        <button className="w-full bg-blue-600 p-3 rounded">
+          Login
+        </button>
       </form>
     </div>
   );

@@ -1,13 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+// app/api/services/booking/delete/route.ts
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function POST(req: Request) {
+  const user = await getCurrentUser(req);
+  if (!user || user.role !== "admin") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  try {
-    await prisma.booking.delete({ where: { id } });
-    return NextResponse.json({ message: "Booking deleted successfully" });
-  } catch (err) {
-    return NextResponse.json({ error: "Booking not found or cannot delete" }, { status: 404 });
-  }
+  const { bookingId } = await req.json();
+  if (!bookingId) return NextResponse.json({ error: "Missing" }, { status: 400 });
+
+  await prisma.booking.delete({ where: { id: bookingId } });
+  return NextResponse.json({ ok: true });
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 
 type BookingCardProps = {
   id: string;
@@ -40,7 +41,7 @@ export default function BookingCard({
         <p className={`font-semibold ${statusColor}`}>{status}</p>
 
         {onUpdate && (
-          <select
+          <Select
             value={status}
             onChange={(e) =>
               onUpdate?.(e.target.value as "Pending" | "Confirmed" | "Cancelled")
@@ -50,7 +51,7 @@ export default function BookingCard({
             <option value="Pending">Pending</option>
             <option value="Confirmed">Confirmed</option>
             <option value="Cancelled">Cancelled</option>
-          </select>
+          </Select>
         )}
       </div>
     </div>

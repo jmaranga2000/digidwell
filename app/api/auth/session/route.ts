@@ -1,8 +1,10 @@
+// app/api/auth/session/route.ts
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
+import { getCurrentUser } from "@/lib/auth";
 
-export async function GET() {
-  const user = await getSession();
-  if (!user) return NextResponse.json({ user: null });
-  return NextResponse.json({ user });
+export async function GET(req: Request) {
+  const user = await getCurrentUser(req);
+  if (!user) return NextResponse.json({ user: null }, { status: 200 });
+  const { password, ...safe } = user as any;
+  return NextResponse.json({ user: safe }, { status: 200 });
 }

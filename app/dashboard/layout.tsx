@@ -12,11 +12,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background text-foreground overflow-hidden">
+      {/* Sidebar */}
       <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
-      <div className="flex-1 flex flex-col overflow-hidden">
+
+      {/* Main content wrapper */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+
+        {/* Topbar */}
         <Topbar setSidebarOpen={setSidebarOpen} />
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+
+        {/* Main Page Content */}
+        <main className="flex-1 overflow-y-auto p-6">
+          {children}
+        </main>
       </div>
     </div>
   );

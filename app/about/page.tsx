@@ -1,6 +1,7 @@
-import AboutHero from "@/components/about/abouthero";
-import FeatureCard from "@/components/about/featurecard";
-import VisionMissionCard from "@/components/about/visionmision";
+import AboutHero from "@/components/about/AboutHero";
+import FeatureCard from "@/components/about/FeatureCard";
+import VisionMissionCard from "@/components/about/VisionMissionCard";
+
 
 export default function AboutPage() {
   return (

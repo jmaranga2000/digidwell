@@ -1,53 +1,40 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import jwt from "jsonwebtoken";
-
-const PUBLIC_PATHS = [
-  "/",
-  "/login",
-  "/register",
-  "/api/auth/login",
-  "/api/auth/register",
-];
+import { verifyToken } from "./lib/verifyToken";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Allow public routes
-  if (PUBLIC_PATHS.includes(pathname)) {
-    return NextResponse.next();
-  }
-
   const token = req.cookies.get("token")?.value;
+  const user = verifyToken(token);
 
-  // If token does not exist → redirect to login
-  if (!token) {
-    return NextResponse.redirect(new URL("/login", req.url));
+  const isAuthRoute =
+    pathname.startsWith("/auth/login") ||
+    pathname.startsWith("/auth/register");
+
+  const isDashboard = pathname.startsWith("/dashboard");
+
+  // -----------------------------------------------------
+  // 1) PROTECT DASHBOARD
+  // -----------------------------------------------------
+  if (isDashboard && !user) {
+    return NextResponse.redirect(new URL("/auth/login", req.url));
   }
 
-  try {
-    // Verify token
-    jwt.verify(token, process.env.JWT_SECRET!);
-
-    // Allow authenticated users
-    return NextResponse.next();
-  } catch (error) {
-    // Invalid token → clear cookie and redirect
-    const response = NextResponse.redirect(new URL("/login", req.url));
-    response.cookies.set("token", "", {
-      path: "/",
-      expires: new Date(0),
-    });
-    return response;
+  // -----------------------------------------------------
+  // 2) BLOCK AUTH PAGES IF LOGGED IN
+  // -----------------------------------------------------
+  if (isAuthRoute && user) {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
+
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/admin/:path*",
-    "/services/:path*",
-    "/orders/:path*",
-    "/profile/:path*",
+   // "/dashboard/:path*",        // protect dashboard
+    //"/auth/login",              // block if logged in
+   // "/auth/register"            // block if logged in
   ],
 };

@@ -1,16 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
-// Mock confirm payment API
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { bookingId, paymentId } = body;
+    const data = await req.json();
+    const { checkoutRequestID, resultCode, phone, amount } = data;
 
-    // Normally: update payment status in DB
-    console.log(`Payment confirmed for booking ${bookingId}, paymentId: ${paymentId}`);
+    // Example: Only proceed if payment was successful
+    if (resultCode !== 0) {
+      return NextResponse.json({ success: false, message: "Payment failed" }, { status: 400 });
+    }
 
-    return NextResponse.json({ success: true, message: "Payment confirmed" });
+    // Find booking by checkoutRequestID
+    const booking = await prisma.booking.findFirst({
+      where: { mpesaCheckoutRequestId: checkoutRequestID },
+    });
+
+    if (!booking) {
+      return NextResponse.json({ success: false, message: "Booking not found" }, { status: 404 });
+    }
+
+    // Update booking status to paid
+    const updatedBooking = await prisma.booking.update({
+      where: { id: booking.id },
+      data: {
+        status: "PAID",
+        phone,
+        amountPaid: amount,
+      },
+    });
+
+    return NextResponse.json({ success: true, booking: updatedBooking });
   } catch (error) {
-    return NextResponse.json({ success: false, error: "Failed to confirm payment" }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
   }
 }

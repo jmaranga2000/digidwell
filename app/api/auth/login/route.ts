@@ -1,34 +1,32 @@
-import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+import { signToken } from "@/lib/jwt";
+import { NextResponse } from "next/server";
 
-const JWT_SECRET = process.env.JWT_SECRET || "secret";
-
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
 
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-    }
+    if (!user)
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 400 });
 
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-    }
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid)
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 400 });
 
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
+    const token = signToken({ id: user.id });
 
-    const response = NextResponse.json({ message: "Login successful", user: { id: user.id, email: user.email, name: user.name } });
+    const res = NextResponse.json({ message: "Login successful", user });
+    res.cookies.set("token", token, {
+      httpOnly: true,
+      secure: true,
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60,
+    });
 
-    // Set cookie
-    response.cookies.set("token", token, { httpOnly: true, path: "/", maxAge: 60 * 60 * 24 * 7 });
-
-    return response;
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Login failed" }, { status: 500 });
+    return res;
+  } catch (error) {
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

@@ -8,7 +8,7 @@ export default function Navbar() {
   return (
     <>
       <nav className="bg-white dark:bg-gray-800 shadow px-6 py-4 flex justify-between items-center">
-        <div className="text-xl font-bold text-blue-600">DigiDwell</div>
+        <div className="text-xl font-bold text-blue-600">Digidwell</div>
 
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-6">

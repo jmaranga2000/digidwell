@@ -1,3 +1,7 @@
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import "./contact.css";
+
 export default function ContactPage() {
   return (
     <main className="px-4 md:px-8 py-12 space-y-12">
@@ -7,8 +11,8 @@ export default function ContactPage() {
         <h1 className="text-4xl md:text-5xl font-bold">
           Contact Us
         </h1>
-        <p style={{ color: "var(--foreground)" }} className="max-w-2xl mx-auto">
-          We're here to assist you. Fill out the form below and our support team will respond shortly.
+        <p className="max-w-2xl mx-auto contact-foreground">
+          We&#39;re here to assist you. Fill out the form below and our support team will respond shortly.
         </p>
       </section>
 
@@ -44,16 +48,16 @@ export default function ContactPage() {
             <label className="block font-semibold mb-2">
               Message
             </label>
-            <textarea
+            <Textarea
               placeholder="Write your message here..."
               rows={5}
               className="w-full"
-            ></textarea>
+            ></Textarea>
           </div>
 
-          <button className="btn-primary w-full">
+          <Button className="btn-primary w-full">
             Send Message
-          </button>
+          </Button>
         </div>
 
         {/* CONTACT INFORMATION */}
@@ -62,7 +66,7 @@ export default function ContactPage() {
             Get in Touch
           </h2>
 
-          <p style={{ color: "var(--foreground)" }}>
+          <p className="contact-foreground">
             You can also reach us directly through the following channels.
           </p>
 
@@ -77,17 +81,17 @@ export default function ContactPage() {
               <strong>Office Hours:</strong> Mon – Sat, 8:00am – 6:00pm
             </li>
           </ul>
-
           <div className="rounded-xl overflow-hidden">
             <iframe
               src="https://www.google.com/maps/embed?pb=!1m18..."
               width="100%"
               height="250"
-              style={{ border: 0 }}
+              className="contact-map-iframe"
               loading="lazy"
+              title="Digidwell Office Location on Google Maps"
             ></iframe>
           </div>
-        </div>
+          </div>
 
       </section>
     </main>

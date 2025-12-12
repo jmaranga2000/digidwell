@@ -1,11 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { loginMockUser } from "@/lib/mockSession";
+import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -16,70 +13,55 @@ export default function RegisterPage() {
     password: "",
   });
 
-  const [loading, setLoading] = useState(false);
-
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
+  async function onSubmit(e: any) {
     e.preventDefault();
-    setLoading(true);
 
-    try {
-      // Mock registration API
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify(form),
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      if (!res.ok) {
-        toast.error(data.error || "Registration failed");
-        return;
-      }
+    if (!res.ok) return toast.error(data.error);
 
-      // Log in mock user automatically after registration
-      loginMockUser({
-        name: form.name,
-        email: form.email,
-        role: "customer", // default role for testing
-      });
-
-      toast.success(`Welcome ${form.name}!`);
-      router.push("/dashboard/customer");
-    } catch (error) {
-      toast.error("Unexpected error. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    toast.success("Account created");
+    router.push("/auth/login");
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold mb-6">Register</h1>
+    <div className="min-h-screen grid place-items-center">
+      <form
+        className="bg-gray-900 p-6 rounded-xl border border-gray-700 w-full max-w-md space-y-4"
+        onSubmit={onSubmit}
+      >
+        <h1 className="text-xl font-bold">Create Account</h1>
 
-      <form onSubmit={handleSubmit} className="max-w-lg space-y-4 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow">
-        <div>
-          <label className="block mb-1 font-semibold">Full Name</label>
-          <Input name="name" value={form.name} onChange={handleChange} placeholder="Enter your name" required />
-        </div>
+        <input
+          className="w-full p-3 rounded bg-gray-800"
+          placeholder="Full Name"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+        />
 
-        <div>
-          <label className="block mb-1 font-semibold">Email</label>
-          <Input type="email" name="email" value={form.email} onChange={handleChange} placeholder="Enter your email" required />
-        </div>
+        <input
+          className="w-full p-3 rounded bg-gray-800"
+          placeholder="Email"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+        />
 
-        <div>
-          <label className="block mb-1 font-semibold">Password</label>
-          <Input type="password" name="password" value={form.password} onChange={handleChange} placeholder="Enter your password" required />
-        </div>
+        <input
+          className="w-full p-3 rounded bg-gray-800"
+          type="password"
+          placeholder="Password"
+          value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
+        />
 
-        <Button type="submit" disabled={loading} className="w-full py-2">
-          {loading ? "Registering..." : "Register"}
-        </Button>
+        <button className="w-full bg-blue-600 p-3 rounded">
+          Register
+        </button>
       </form>
     </div>
   );

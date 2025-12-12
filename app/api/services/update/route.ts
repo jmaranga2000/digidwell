@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAuth } from "@/lib/auth";
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const { id } = params;
-  const updates = await req.json();
+export async function PUT(req: NextRequest) {
+  return requireAuth(async (_req, _user) => {
+    const { id, title, description, imageUrl, price } = await req.json();
 
-  try {
+    if (!id || !title || !description || !imageUrl || price == null) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
+
     const service = await prisma.service.update({
       where: { id },
-      data: updates,
+      data: { title, description, imageUrl, price },
     });
-    return NextResponse.json(service);
-  } catch (err) {
-    return NextResponse.json({ error: "Service not found or cannot update" }, { status: 404 });
-  }
+
+    return NextResponse.json({ service });
+  })(req);
 }

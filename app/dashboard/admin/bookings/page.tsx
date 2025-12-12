@@ -1,120 +1,90 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Sidebar from "@/app/dashboard/components/Sidebar";
-import Topbar from "@/app/dashboard/components/Topbar";
-import BookingCard from "@/app/dashboard/components/BookingCard";
-import AdminCard from "@/app/dashboard/components/AdminCard";
-import { toast } from "sonner";
+import { useState, useEffect } from "react";
+import prisma from "@/lib/prisma";
+import { Button } from "@/components/ui/button";
 
 type Booking = {
   id: string;
-  serviceTitle: string;
-  customerName: string;
-  customerEmail: string;
-  status: "Pending" | "Confirmed" | "Cancelled";
-};
-
-type Stats = {
-  totalBookings: number;
-  confirmed: number;
-  pending: number;
-  cancelled: number;
+  note: string;
+  date: string;
+  user: { id: string; name: string | null; email: string };
+  service: { id: string; title: string };
 };
 
 export default function AdminBookingsPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [stats, setStats] = useState<Stats>({
-    totalBookings: 0,
-    confirmed: 0,
-    pending: 0,
-    cancelled: 0,
-  });
 
-  // Fetch bookings (mock API)
-  useEffect(() => {
-    fetch("/api/services/booking/all")
-      .then((res) => res.json())
-      .then((data) => {
-        setBookings(data.bookings);
-        calculateStats(data.bookings);
-      });
-  }, []);
-
-  const calculateStats = (bookings: Booking[]) => {
-    setStats({
-      totalBookings: bookings.length,
-      pending: bookings.filter((b) => b.status === "Pending").length,
-      confirmed: bookings.filter((b) => b.status === "Confirmed").length,
-      cancelled: bookings.filter((b) => b.status === "Cancelled").length,
-    });
+  // Fetch all bookings from API
+  const fetchBookings = async () => {
+    const res = await fetch("/api/services/booking/all");
+    const data = await res.json();
+    setBookings(data);
   };
 
-  const updateBookingStatus = async (bookingId: string, newStatus: Booking["status"]) => {
-    try {
-      const res = await fetch("/api/services/booking/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bookingId, status: newStatus }),
-      });
-      const data = await res.json();
-      if (!res.ok) return toast.error(data.error || "Failed to update booking status.");
+  useEffect(() => {
+    fetchBookings();
+  }, []);
 
-      const updated = bookings.map((b) =>
-        b.id === bookingId ? { ...b, status: newStatus } : b
-      );
-      setBookings(updated);
-      calculateStats(updated);
+  // Delete booking
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this booking?")) return;
+    await fetch(`/api/services/booking/delete/${id}`, { method: "DELETE" });
+    setBookings(bookings.filter((b) => b.id !== id));
+  };
 
-      toast.success(`Booking ${newStatus.toLowerCase()} successfully!`);
-    } catch {
-      toast.error("Unexpected error. Please try again.");
-    }
+  // Update booking note (example)
+  const handleUpdate = async (id: string) => {
+    const newNote = prompt("Enter new note:");
+    if (!newNote) return;
+    await fetch(`/api/services/booking/update/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ note: newNote }),
+    });
+    setBookings(
+      bookings.map((b) => (b.id === id ? { ...b, note: newNote } : b))
+    );
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
-
-      <div className="flex-1 flex flex-col">
-        <Topbar />
-
-        <main className="p-6 space-y-12">
-          {/* Stats */}
-          <section>
-            <h2 className="text-2xl font-bold mb-6">Bookings Overview</h2>
-            <div className="grid md:grid-cols-4 gap-6">
-              <AdminCard title="Total Bookings" count={stats.totalBookings} description="All bookings received" />
-              <AdminCard title="Pending" count={stats.pending} description="Awaiting confirmation" />
-              <AdminCard title="Confirmed" count={stats.confirmed} description="Confirmed bookings" />
-              <AdminCard title="Cancelled" count={stats.cancelled} description="Cancelled bookings" />
-            </div>
-          </section>
-
-          {/* All bookings */}
-          <section>
-            <h2 className="text-2xl font-bold mb-6">All Bookings</h2>
-            <div className="space-y-6">
-              {bookings.length ? (
-                bookings.map((booking) => (
-                  <BookingCard
-                    key={booking.id}
-                    id={booking.id}
-                    serviceTitle={booking.serviceTitle}
-                    customerName={booking.customerName}
-                    customerEmail={booking.customerEmail}
-                    status={booking.status}
-                    onUpdate={(newStatus) => updateBookingStatus(booking.id, newStatus)}
-                  />
-                ))
-              ) : (
-                <p className="text-gray-500 dark:text-gray-300">No bookings available.</p>
-              )}
-            </div>
-          </section>
-        </main>
-      </div>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">All Bookings</h1>
+      <table className="w-full border-collapse border">
+        <thead>
+          <tr>
+            <th className="border px-2 py-1">User</th>
+            <th className="border px-2 py-1">Service</th>
+            <th className="border px-2 py-1">Date</th>
+            <th className="border px-2 py-1">Note</th>
+            <th className="border px-2 py-1">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {bookings.map((b) => (
+            <tr key={b.id}>
+              <td className="border px-2 py-1">{b.user.name || b.user.email}</td>
+              <td className="border px-2 py-1">{b.service.title}</td>
+              <td className="border px-2 py-1">{new Date(b.date).toLocaleDateString()}</td>
+              <td className="border px-2 py-1">{b.note}</td>
+              <td className="border px-2 py-1 flex gap-2">
+                <Button
+                  className="bg-yellow-500 text-white px-2 py-1 rounded"
+                  onClick={() => handleUpdate(b.id)}
+                >
+                  Update
+                </Button>
+                <Button
+                  className="bg-red-600 text-white px-2 py-1 rounded"
+                  onClick={() => handleDelete(b.id)}
+                >
+                  Delete
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

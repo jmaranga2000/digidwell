@@ -1,111 +1,95 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Toaster, toast } from "@/components/ui/sonner";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
-export default function BookServicePage() {
-  const params = useParams();
-  const serviceId = params.id as string;
+interface Service {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+}
+
+interface BookingResponse {
+  booking: any;
+  stkResponse: any;
+}
+
+export default function BookServicePage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const router = useRouter();
 
-  const [form, setForm] = useState({
-    fullName: "",
-    email: "",
-    notes: "",
-  });
-
+  const [service, setService] = useState<Service | null>(null);
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  }
+  // Fetch service details
+  useEffect(() => {
+    async function fetchService() {
+      const res = await fetch(`/api/services/${id}`);
+      const data = await res.json();
+      setService(data);
+    }
+    fetchService();
+  }, [id]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  // Handle booking + payment
+  async function handleBooking() {
+    if (!phone) return toast.error("Please enter your phone number");
+
     setLoading(true);
-
     try {
-      // 1️⃣ Mock booking API
-      const newBooking = {
-        id: Date.now().toString(),
-        serviceId,
-        serviceTitle: `Service ${serviceId}`,
-        customerName: form.fullName,
-        customerEmail: form.email,
-        notes: form.notes,
-        status: "Pending",
-      };
+      const res = await fetch("/api/services/booking/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ serviceId: id, phone }),
+      });
 
-      toast.success("Booking successful! Proceeding to payment...");
+      const data: BookingResponse = await res.json();
 
-      // 2️⃣ Mock payment process (replace with real payment API later)
-      setTimeout(() => {
-        newBooking.status = "Confirmed";
-        toast.success("Payment successful! Booking confirmed.");
-        setLoading(false);
-
-        // 3️⃣ Redirect to customer dashboard after booking/payment
-        router.push("/dashboard/customer");
-      }, 1500);
-    } catch (error) {
-      toast.error("Unexpected error. Please try again later.");
+      if (res.ok) {
+        toast.success("STK Push sent! Please complete payment on your phone.");
+        console.log("STK Response:", data.stkResponse);
+        // Optionally redirect to booking list or confirmation page
+      } else {
+        toast.error(data.stkResponse?.error || "Booking failed");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Booking failed due to network error");
+    } finally {
       setLoading(false);
     }
   }
 
+  if (!service) return <p>Loading service...</p>;
+
   return (
-    <div className="container mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold mb-6">Book Service</h1>
+    <div className="max-w-2xl mx-auto p-6 bg-background text-foreground rounded-xl shadow-md">
+      <h1 className="text-3xl font-bold mb-4">{service.title}</h1>
+      <p className="mb-4">{service.description}</p>
+      <p className="font-semibold mb-4">Price: KES {service.price}</p>
 
-      <p className="mb-6 text-gray-700 dark:text-gray-300">
-        Booking service ID: <span className="font-semibold">{serviceId}</span>
-      </p>
+      <Input
+        type="tel"
+        placeholder="Enter your phone number"
+        className="w-full mb-4 p-2 border border-border rounded"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+      />
 
-      <form
-        onSubmit={handleSubmit}
-        className="max-w-lg space-y-4 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow"
+      <Button
+        onClick={handleBooking}
+        disabled={loading}
+        className="bg-primary text-black font-semibold px-4 py-2 rounded hover:bg-primary/90"
       >
-        <div>
-          <label className="block mb-1 font-semibold">Full Name</label>
-          <Input
-            name="fullName"
-            placeholder="Enter your full name"
-            value={form.fullName}
-            onChange={handleChange}
-            required
-          />
-        </div>
+        {loading ? "Processing..." : "Book & Pay"}
+      </Button>
 
-        <div>
-          <label className="block mb-1 font-semibold">Email</label>
-          <Input
-            type="email"
-            name="email"
-            placeholder="Enter your email"
-            value={form.email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block mb-1 font-semibold">Additional Notes</label>
-          <Textarea
-            name="notes"
-            placeholder="Optional details..."
-            value={form.notes}
-            onChange={handleChange}
-          />
-        </div>
-
-        <Button type="submit" disabled={loading} className="w-full py-2">
-          {loading ? "Processing..." : "Book & Pay"}
-        </Button>
-      </form>
+      <Toaster richColors position="top-right" />
     </div>
   );
 }

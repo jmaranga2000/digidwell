@@ -1,18 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+// app/api/services/booking/update/route.ts
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const { id } = params;
-  const updates = await req.json();
+export async function POST(req: Request) {
+  const user = await getCurrentUser(req);
+  if (!user || user.role !== "admin") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  try {
-    const booking = await prisma.booking.update({
-      where: { id },
-      data: updates,
-      include: { service: true, customer: true },
-    });
-    return NextResponse.json(booking);
-  } catch (err) {
-    return NextResponse.json({ error: "Booking not found or cannot update" }, { status: 404 });
-  }
+  const { bookingId, status } = await req.json();
+  if (!bookingId || !status) return NextResponse.json({ error: "Missing" }, { status: 400 });
+
+  const updated = await prisma.booking.update({ where: { id: bookingId }, data: { status } });
+  return NextResponse.json({ booking: updated });
 }

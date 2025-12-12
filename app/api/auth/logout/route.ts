@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+// app/api/auth/logout/route.ts
+import { NextResponse } from "next/server";
 
-export async function POST(req: NextRequest) {
-  const response = NextResponse.json({ message: "Logged out successfully" });
-  response.cookies.set("token", "", { httpOnly: true, path: "/", maxAge: 0 });
-  return response;
+export async function POST() {
+  const res = NextResponse.json({ ok: true });
+  res.headers.set("Set-Cookie", `token=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax`);
+  return res;
 }
