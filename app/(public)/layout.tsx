@@ -1,9 +1,9 @@
 // app/layout.tsx
+import Navbar from "@/components/Navbar";
 import "./globals.css";
-import { ClerkProvider, SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-
+import Footer from "@/components/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,18 +16,26 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Digidwell Technologies",
+  title: "DigiDwell Technologies",
   description: "Professional Tech Services",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ClerkProvider>
       <html lang="en">
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}>
+          
+          {/* NAVBAR */}
+          <Navbar />
+
+          {/* PAGE CONTENT */}
+          <main className="pt-20">
             {children}
+          </main>
+
+          <Footer />
+
         </body>
       </html>
-    </ClerkProvider>
   );
 }

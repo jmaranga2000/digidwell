@@ -1,15 +1,14 @@
-type FeatureCardProps = {
+// components/about/FeatureCard.tsx
+interface FeatureCardProps {
   title: string;
   description: string;
-};
+}
 
 export default function FeatureCard({ title, description }: FeatureCardProps) {
   return (
-    <div className="glass p-6 rounded-2xl shadow text-center">
-      <h3 className="font-semibold text-xl mb-2">{title}</h3>
-      <p style={{ color: "var(--foreground)" }}>
-        {description}
-      </p>
+    <div className="p-6 bg-white rounded-2xl shadow hover:shadow-lg transition">
+      <h3 className="text-xl font-semibold mb-2">{title}</h3>
+      <p className="text-gray-600">{description}</p>
     </div>
   );
 }
