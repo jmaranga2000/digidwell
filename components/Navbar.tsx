@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import Image from "next/image";
+import { Button } from "./ui/button";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -12,9 +14,12 @@ export default function Navbar() {
       <nav className="max-w-7xl mx-auto h-16 px-6 flex items-center justify-between">
 
         {/* LOGO */}
-        <Link href="/" className="text-2xl font-bold text-gray-900">
+        <div className="flex items-center space-x-3">
+        <Link href="/" className="flex-shrink-0 text-2xl font-bold text-gray-900">
+        <Image src="/logo.jpg" alt="logo" width={34}  height={34} />
           DigiDwell
         </Link>
+        </div>
 
         {/* Desktop Links */}
         <div className="hidden md:flex items-center gap-8 text-gray-700 font-medium">
@@ -29,15 +34,15 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-4">
           <SignedOut>
             <SignInButton mode="modal">
-              <button className="px-4 py-2 border border-gray-300 rounded-lg font-semibold hover:bg-gray-100 transition">
+              <Button className="px-4 py-2 border border-gray-300 rounded-lg font-semibold hover:bg-gray-100 transition">
                 Login
-              </button>
+              </Button>
             </SignInButton>
 
             <SignUpButton mode="modal">
-              <button className="px-4 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-900 transition">
+              <Button className="px-4 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-900 transition">
                 Register
-              </button>
+              </Button>
             </SignUpButton>
           </SignedOut>
 
@@ -47,11 +52,11 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Button */}
-        <button onClick={() => setOpen(!open)} className="md:hidden text-gray-600">
+        <Button onClick={() => setOpen(!open)} className="md:hidden text-gray-600">
           <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
-        </button>
+        </Button>
       </nav>
 
       {/* Mobile Menu */}

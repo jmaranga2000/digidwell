@@ -1,93 +1,144 @@
-/* contact.css */
+/* ==========================
+   General Layout
+========================== */
+body {
+  font-family: 'Inter', sans-serif;
+}
 
-/* Glassmorphic Panels */
+main {
+  scroll-behavior: smooth;
+}
+
+/* ==========================
+   Glass Card Style
+========================== */
 .glass {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease-in-out;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Hover shadow effect */
 .glass:hover {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.2);
 }
 
-/* Form Inputs */
+/* ==========================
+   Animations
+========================== */
+/* Fade In */
+@keyframes fade-in {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease forwards;
+}
+
+/* Slide Up */
+@keyframes slide-up {
+  0% { opacity: 0; transform: translateY(50px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.8s ease forwards;
+}
+
+.animate-slide-up.delay-150 {
+  animation-delay: 0.15s;
+}
+
+/* ==========================
+   Form Inputs
+========================== */
 input,
 textarea {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid #ddd;
+  font-size: 1rem;
   padding: 0.75rem 1rem;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  outline: none;
-  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid #d1d5db;
+  transition: all 0.2s ease;
 }
 
 input:focus,
 textarea:focus {
-  border-color: #3b82f6; /* Tailwind blue-500 */
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-  background: rgba(255, 255, 255, 0.9);
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
-/* Buttons */
-.btn-primary {
-  background-color: #3b82f6;
-  color: #fff;
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
+/* ==========================
+   Buttons
+========================== */
+button {
   font-weight: 600;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
-.btn-primary:hover {
-  background-color: #2563eb; /* Tailwind blue-600 */
-  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+button:hover {
+  transform: scale(1.05);
 }
 
-/* Contact Section Text */
-.contact-foreground {
-  color: rgba(55, 65, 81, 0.8); /* Tailwind gray-700 */
-  line-height: 1.6;
+/* ==========================
+   Contact Info List
+========================== */
+ul {
+  list-style: none;
+  padding: 0;
 }
 
-/* Google Map */
-.contact-map-iframe {
+ul li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* ==========================
+   Floating WhatsApp Chat
+========================== */
+.floating-whatsapp {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background-color: #25d366;
+  color: white;
+  border-radius: 50%;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.floating-whatsapp:hover {
+  transform: scale(1.1);
+  background-color: #1ebe57;
+}
+
+/* ==========================
+   Google Map
+========================== */
+iframe {
   border: 0;
-  border-radius: 1rem;
+  border-radius: 0.75rem;
   width: 100%;
   height: 250px;
 }
 
-/* Fade-in animation for sections */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.8s ease forwards;
-}
-
-/* Delay variants for staggered animation */
-.delay-150 {
-  animation-delay: 0.15s;
-}
-
-/* Responsive adjustments */
+/* ==========================
+   Responsive spacing
+========================== */
 @media (max-width: 768px) {
-  .glass {
-    padding: 1.5rem;
-  }
-  input,
-  textarea {
-    padding: 0.65rem 0.75rem;
-  }
-  .btn-primary {
-    width: 100%;
-    text-align: center;
+  main {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 }

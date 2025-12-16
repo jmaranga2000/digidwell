@@ -1,44 +1,34 @@
 "use client";
 
-import { Dispatch, SetStateAction } from "react";
-import { Button } from "@/components/ui/button";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
+import { useEffect, useState } from "react";
+import { getAuthUser } from "@/lib/session";
 
 interface TopbarProps {
-  user?: User | null; // optional for guests
-  setSidebarOpen?: Dispatch<SetStateAction<boolean>>;
+  user?: { name: string; role: string };
 }
 
-export default function Topbar({ user, setSidebarOpen }: TopbarProps) {
-  return (
-    <div className="flex justify-between items-center p-4 border-b border-border">
-      <div className="flex items-center gap-3">
-        {setSidebarOpen && (
-          <Button
-            variant="outline"
-            className="sm:hidden"
-            onClick={() => setSidebarOpen((prev) => !prev)}
-          >
-            ☰
-          </Button>
-        )}
-        <span className="font-semibold text-lg">Dashboard</span>
-      </div>
+export default function Topbar({ user: initialUser }: TopbarProps) {
+  const [user, setUser] = useState(initialUser);
 
-      <div className="flex items-center gap-4">
-        {user ? (
-          <span className="text-sm text-muted-foreground">
-            Welcome, {user.name}
-          </span>
-        ) : (
-          <span className="text-sm text-muted-foreground">Guest</span>
-        )}
+  useEffect(() => {
+    async function fetchUser() {
+      if (!initialUser) {
+        const u = await getAuthUser();
+        setUser(u);
+      }
+    }
+    fetchUser();
+  }, [initialUser]);
+
+  return (
+    <header className="flex items-center justify-between p-4 bg-white shadow">
+      <div className="text-lg font-semibold">Welcome, {user?.name || "User"}!</div>
+      <div>
+        <span className="text-sm text-gray-600 mr-4 capitalize">{user?.role}</span>
+        <button className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded">
+          Logout
+        </button>
       </div>
-    </div>
+    </header>
   );
 }

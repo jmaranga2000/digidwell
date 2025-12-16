@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner";
 import { FiMail, FiPhone, FiClock, FiMapPin } from "react-icons/fi";
 import "./contact.css";
 
@@ -27,7 +27,7 @@ export default function ContactPage() {
     }
     setLoading(true);
     try {
-      // Replace with actual API call
+      // Simulate API call
       await new Promise((res) => setTimeout(res, 1000));
       toast.success("Message sent successfully!");
       setForm({ name: "", email: "", message: "" });
@@ -40,6 +40,8 @@ export default function ContactPage() {
 
   return (
     <main className="px-4 md:px-16 py-12 space-y-16">
+
+      <Toaster richColors position="top-right" />
 
       {/* HERO SECTION */}
       <section className="text-center space-y-4">
@@ -126,21 +128,23 @@ export default function ContactPage() {
               title="Digidwell Office Location"
             ></iframe>
           </div>
-
-          {/* WhatsApp Live Chat */}
-          <a
-            href="https://wa.me/254750468852"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="fixed bottom-8 right-8 bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg flex items-center justify-center transition"
-            title="Chat with us on WhatsApp"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-6 h-6">
-              <path d="M20.52 3.48a11.93 11.93 0 00-17 0 11.93 11.93 0 00-3.48 17l-1.92 5.28 5.28-1.92a11.93 11.93 0 0017-17zm-9.52 18a9.93 9.93 0 01-5.28-1.44l-.36-.24-3.12 1.14 1.14-3.12-.24-.36a9.93 9.93 0 1110.86 4.02z" />
-            </svg>
-          </a>
         </div>
       </section>
+
+      {/* WhatsApp Floating Button */}
+      <a
+        href="https://wa.me/254750468852"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="floating-whatsapp"
+        title="Chat with us on WhatsApp"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-6 h-6">
+          <path d="M20.52 3.48a11.93 11.93 0 00-17 0 11.93 11.93 0 00-3.48 17l-1.92 5.28 5.28-1.92a11.93 11.93 0 0017-17zm-9.52 18a9.93 9.93 0 01-5.28-1.44l-.36-.24-3.12 1.14 1.14-3.12-.24-.36a9.93 9.93 0 1110.86 4.02z" />
+        </svg>
+      </a>
+
+      
     </main>
   );
 }

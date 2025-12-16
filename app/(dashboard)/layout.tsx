@@ -1,30 +1,28 @@
-import { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
+import { auth } from "@clerk/nextjs/server";
+import { syncClerkUser } from "@/lib/clerk-sync";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 
-interface DashboardLayoutProps {
-  children: ReactNode;
-}
+export default async function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { userId } = auth();
 
-export default async function DashboardLayout({ children }: DashboardLayoutProps) {
-  const user = await getSession();
+  if (!userId) redirect("/auth/login");
 
-  if (!user) {
-    redirect("/auth/login");
-  }
+  const user = await syncClerkUser();
+
+  if (!user) redirect("/auth/login");
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      <Sidebar open={true} user={user} />
-
-      <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="flex h-screen">
+      <Sidebar user={user} />
+      <div className="flex flex-col flex-1">
         <Topbar user={user} />
-
-        <main className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
   );

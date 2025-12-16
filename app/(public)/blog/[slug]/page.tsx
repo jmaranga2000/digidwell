@@ -1,25 +1,33 @@
+import prisma from "@/lib/prisma";
+import { Image } from "lucide-react";
 import { notFound } from "next/navigation";
 
-type BlogPost = {
-  slug: string;
-  title: string;
-  content: string;
-  date: string;
-};
+interface Props {
+  params: { slug: string };
+}
 
-export default async function BlogPostPage({ params }: { params: { slug: string } }) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/blog/${params.slug}`);
-  const data = await res.json();
+export default async function BlogPostPage({ params }: Props) {
+  const post = await prisma.blogPost.findUnique({
+    where: { slug: params.slug },
+  });
 
-  if (!res.ok || !data.post) return notFound();
-
-  const post: BlogPost = data.post;
+  if (!post || !post.published) notFound();
 
   return (
-    <div className="container mx-auto px-4 py-12 max-w-3xl">
-      <h1 className="text-3xl font-bold mb-4">{post.title}</h1>
-      <p className="text-sm text-gray-400 mb-6">{post.date}</p>
-      <div className="text-gray-700 dark:text-gray-300 space-y-4">{post.content}</div>
-    </div>
+    <article className="max-w-3xl mx-auto px-6 py-12">
+      <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
+
+      {post.featuredImage && (
+        <Image
+          src={post.featuredImage}
+          alt={post.title}
+          className="rounded-xl mb-8"
+        />
+      )}
+
+      <div className="prose max-w-none">
+        {post.content}
+      </div>
+    </article>
   );
 }

@@ -1,32 +1,16 @@
-import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
-import { signToken } from "@/lib/jwt";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { clerkClient } from "@clerk/nextjs/server";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const { email, password } = await req.json();
+
   try {
-    const { email, password } = await req.json();
-
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user)
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 400 });
-
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid)
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 400 });
-
-    const token = signToken({ id: user.id });
-
-    const res = NextResponse.json({ message: "Login successful", user });
-    res.cookies.set("token", token, {
-      httpOnly: true,
-      secure: true,
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60,
-    });
-
-    return res;
-  } catch (error) {
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    // Clerk handles login via frontend; here just a placeholder
+    return NextResponse.json({ message: "Login handled via Clerk frontend" });
+  } catch (err: unknown) {
+      if (err instanceof Error) {
+        return NextResponse.json({ error: err.message }, { status: 400 });
+      }
+      return NextResponse.json({ error: "Unknown error occurred" }, { status: 400 });
+    }
   }
-}

@@ -1,18 +1,20 @@
-// app/api/order/create/route.ts
-import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import  prisma  from "@/lib/prisma";
+import { requireCustomer } from "@/lib/session";
 
-export async function POST(req: Request) {
-  const user = await getCurrentUser(req);
-  const { serviceId, amount } = await req.json();
-  const order = await prisma.order.create({
+export async function POST(req: NextRequest) {
+  const user = await requireCustomer();
+  const { serviceId, amount, phone } = await req.json();
+
+  const booking = await prisma.booking.create({
     data: {
-      userId: user?.id,
+      userId: user.id,
       serviceId,
-      amount,
-      status: "Pending",
+      amountPaid: parseFloat(amount),
+      phone,
+      status: "PENDING",
     },
   });
-  return NextResponse.json({ order }, { status: 201 });
+
+  return NextResponse.json({ booking });
 }

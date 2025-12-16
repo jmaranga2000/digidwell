@@ -1,20 +1,21 @@
-export const services = [
-  {
-    id: "1",
-    title: "Computer Upgrades",
-    description: "Upgrade your PC hardware for faster performance and reliability.",
-    price: "KSh 5,000+",
-  },
-  {
-    id: "2",
-    title: "Software Installation",
-    description: "We install and configure all types of software for home & business.",
-    price: "KSh 2,500+",
-  },
-  {
-    id: "3",
-    title: "Tech Consulting",
-    description: "Get professional guidance to optimize your technology experience.",
-    price: "KSh 3,000+",
-  },
-];
+import prisma from "../prisma";
+
+export async function createService(data: {
+  title: string;
+  description?: string;
+  price?: string;
+  categoryId?: string;
+  createdById: string;
+}) {
+  return prisma.service.create({ data });
+}
+
+export async function listServices() {
+  return prisma.service.findMany({
+    include: { category: true, createdBy: true },
+  });
+}
+
+export async function getServiceById(id: string) {
+  return prisma.service.findUnique({ where: { id } });
+}

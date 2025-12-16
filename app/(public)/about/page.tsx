@@ -56,17 +56,29 @@ export default function AboutPage() {
         <h2 className="text-3xl font-bold text-center">Meet the Team</h2>
         <div className="grid md:grid-cols-3 gap-6 text-center">
           <div>
-            <Image src="/team/james.jpeg" alt="James Maranga" className="mx-auto rounded-full w-32 h-32 object-cover" />
+            <Image src="/team/james.jpeg" 
+            alt="James Maranga" 
+            width={128}
+            height={128}
+            className="mx-auto rounded-full w-32 h-32 object-cover" />
             <h3 className="font-semibold mt-2">James Maranga</h3>
             <p className="text-gray-500">Founder & CEO</p>
           </div>
           <div>
-            <Image src="/team/kinjo.jpg" alt="Kinjo" className="mx-auto rounded-full w-32 h-32 object-cover" />
+            <Image src="/team/kinjo.jpeg" 
+            alt="Kinjo" 
+            width={128}
+            height={128}
+            className="mx-auto rounded-full w-32 h-32 object-cover" />
             <h3 className="font-semibold mt-2">Kinjo</h3>
             <p className="text-gray-500">Tech Lead</p>
           </div>
           <div>
-            <Image src="/team/antoine.jpg" alt="Antoine" className="mx-auto rounded-full w-32 h-32 object-cover" />
+            <Image src="/team/antoine.jpeg" 
+            alt="Antoine" 
+            width={128}
+            height={128}
+            className="mx-auto rounded-full w-32 h-32 object-cover" />
             <h3 className="font-semibold mt-2">Antoine</h3>
             <p className="text-gray-500">Project Manager</p>
           </div>
@@ -81,19 +93,19 @@ export default function AboutPage() {
             name="John kingani"
             role="CEO, Company X"
             message="DigiDwell simplified our IT operations and made sure everything runs smoothly."
-            avatarUrl="/avatars/john.jpg"
+            avatarUrl="/avatars/john.jpeg"
           />
           <TestimonialCard
             name="Kevin Smith"
             role="CTO, Company Y"
             message="Their solutions are innovative and easy to use. Highly recommend!"
-            avatarUrl="/avatars/jane.jpg"
+            avatarUrl="/avatars/jane.jpeg"
           />
           <TestimonialCard
             name="Shawn Otieno"
             role="Manager, Company Z"
             message="Professional team with excellent support. Our go-to for tech solutions."
-            avatarUrl="/avatars/michael.jpg"
+            avatarUrl="/avatars/michael.jpeg"
           />
         </div>
       </section>

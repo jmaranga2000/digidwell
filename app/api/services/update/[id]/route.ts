@@ -1,28 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAuth } from "@/lib/session";
 import { uploadImage } from "@/lib/cloudinary";
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const serviceId = params.id;
-    const data = await req.formData();
-
-    const title = data.get("title")?.toString();
-    const description = data.get("description")?.toString();
-    const price = parseFloat(data.get("price")?.toString() || "0");
-    const imageFile = data.get("image") as File | null;
-
-    if (!title || !description || !price) {
-      return NextResponse.json({ error: "Title, description, and price are required" }, { status: 400 });
+    const user = await requireAuth();
+    if (user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    let imageUrl: string | undefined;
+    const serviceId = params.id;
+    const data = await req.json();
 
-    if (imageFile) {
-      const buffer = Buffer.from(await imageFile.arrayBuffer());
-      const base64 = `data:${imageFile.type};base64,${buffer.toString("base64")}`;
-      const uploadResult = await uploadImage(base64);
-      imageUrl = uploadResult.secure_url;
+    const { title, description, price, categoryId, subCategoryId, imageUrl } = data;
+
+    if (!title || !categoryId) {
+      return NextResponse.json({ error: "Title and category are required" }, { status: 400 });
     }
 
     const updatedService = await prisma.service.update({
@@ -31,12 +25,17 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         title,
         description,
         price,
+        categoryId,
+        subCategoryId,
         ...(imageUrl && { imageUrl }),
       },
     });
 
     return NextResponse.json(updatedService);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+    return NextResponse.json({ error: "Unknown error occurred" }, { status: 500 });
   }
 }

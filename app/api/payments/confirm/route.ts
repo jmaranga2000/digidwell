@@ -1,38 +1,41 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { confirmPayment } from "@/lib/mpesa/confirmPayment";
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const data = await req.json();
-    const { checkoutRequestID, resultCode, phone, amount } = data;
+    const callbackData = await req.json();
+    const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = callbackData.Body.stkCallback;
 
-    // Example: Only proceed if payment was successful
-    if (resultCode !== 0) {
-      return NextResponse.json({ success: false, message: "Payment failed" }, { status: 400 });
+    const payment = await prisma.payment.findUnique({ where: { checkoutRequestId: CheckoutRequestID } });
+    if (!payment) return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+
+    let status = ResultCode === 0 ? "SUCCESS" : "FAILED";
+    let amountPaid = 0;
+
+    if (status === "SUCCESS") {
+      const amountItem = CallbackMetadata?.Item?.find((i: any) => i.Name === "Amount");
+      amountPaid = amountItem?.Value || 0;
     }
 
-    // Find booking by checkoutRequestID
-    const booking = await prisma.booking.findFirst({
-      where: { mpesaCheckoutRequestId: checkoutRequestID },
+    const updatedPayment = await prisma.payment.update({
+      where: { id: payment.id },
+      data: { status, amount: amountPaid, resultCode: ResultCode, resultDesc: ResultDesc },
     });
 
-    if (!booking) {
-      return NextResponse.json({ success: false, message: "Booking not found" }, { status: 404 });
+    // Optionally update booking status
+    if (status === "SUCCESS") {
+      await prisma.booking.update({
+        where: { id: payment.bookingId },
+        data: { status: "CONFIRMED", amountPaid },
+      });
     }
 
-    // Update booking status to paid
-    const updatedBooking = await prisma.booking.update({
-      where: { id: booking.id },
-      data: {
-        status: "PAID",
-        phone,
-        amountPaid: amount,
-      },
-    });
-
-    return NextResponse.json({ success: true, booking: updatedBooking });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
+    return NextResponse.json({ updatedPayment });
+  } catch (err: unknown) {
+      if (err instanceof Error) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+      }
+      return NextResponse.json({ error: "Unknown error occurred" }, { status: 500 });
+    }
   }
-}

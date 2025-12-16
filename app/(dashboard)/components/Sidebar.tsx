@@ -1,69 +1,72 @@
 "use client";
 
-import { Dispatch, SetStateAction } from "react";
 import Link from "next/link";
-import { FiHome, FiUser, FiSettings, FiLogOut, FiLogIn } from "react-icons/fi";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
+import { useEffect, useState } from "react";
+import { getAuthUser } from "@/lib/session";
 
 interface SidebarProps {
   open: boolean;
-  setOpen?: Dispatch<SetStateAction<boolean>>;
-  user?: User | null;
 }
 
-export default function Sidebar({ open, setOpen, user }: SidebarProps) {
-  // Define menu items based on login status
-  const guestMenu = [
-    { title: "Login", icon: <FiLogIn />, href: "/auth/login" },
-    { title: "Register", icon: <FiUser />, href: "/auth/register" },
-  ];
+type User = {
+  id: string;
+  email: string;
+  role: "admin" | "customer";
+  name: string;
+};
 
-  const userMenu = [
-    { title: "Dashboard", icon: <FiHome />, href: "/dashboard" },
-    { title: "Profile", icon: <FiUser />, href: "/dashboard/profile" },
-    { title: "Settings", icon: <FiSettings />, href: "/dashboard/settings" },
-    { title: "Logout", icon: <FiLogOut />, href: "/auth/logout" },
-  ];
+export default function Sidebar({ open }: SidebarProps) {
+  const [user, setUser] = useState<User | null>(null);
 
-  const menuItems = user ? userMenu : guestMenu;
+  useEffect(() => {
+    async function fetchUser() {
+      const u = await getAuthUser();
+      setUser(u);
+    }
+    fetchUser();
+  }, []);
+
+  if (!user) return null; // Don't render until user is fetched
 
   return (
-    <aside
-      className={`fixed z-30 inset-y-0 left-0 w-64 bg-gray-800 text-white transition-transform duration-300 transform ${
-        open ? "translate-x-0" : "-translate-x-full"
-      } md:translate-x-0 md:static md:inset-0`}
-    >
-      <div className="flex flex-col h-full">
-        {/* Logo / Branding */}
-        <div className="px-6 py-4 text-2xl font-bold border-b border-gray-700">
-          DigiDwell
-        </div>
+    <aside className={`w-64 bg-gray-800 text-white ${open ? "block" : "hidden"}`}>
+      <div className="p-6 font-bold text-xl">DigiDwell</div>
 
-        {/* Menu */}
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          {menuItems.map((item) => (
-            <Link
-              key={item.title}
-              href={item.href}
-              className="flex items-center gap-3 px-4 py-2 rounded hover:bg-gray-700"
-              onClick={() => setOpen && setOpen(false)} // close sidebar on mobile
-            >
-              {item.icon}
-              <span>{item.title}</span>
+      <nav className="flex flex-col space-y-2 mt-6">
+        <Link href="/dashboard" className="px-4 py-2 hover:bg-gray-700 rounded">
+          Dashboard Home
+        </Link>
+
+        {/* Admin Links */}
+        {user.role === "admin" && (
+          <>
+            <Link href="/dashboard/admin" className="px-4 py-2 hover:bg-gray-700 rounded">
+              Admin Dashboard
             </Link>
-          ))}
-        </nav>
+            <Link href="/dashboard/admin/bookings" className="px-4 py-2 hover:bg-gray-700 rounded">
+              Manage Bookings
+            </Link>
+            <Link href="/dashboard/admin/orders" className="px-4 py-2 hover:bg-gray-700 rounded">
+              Orders
+            </Link>
+          </>
+        )}
 
-        {/* Optional Footer */}
-        <div className="px-4 py-4 border-t border-gray-700 text-sm text-gray-400">
-          {user ? `Logged in as ${user.name}` : "Guest"}
-        </div>
-      </div>
+        {/* Customer Links */}
+        {user.role === "customer" && (
+          <>
+            <Link href="/dashboard/customer" className="px-4 py-2 hover:bg-gray-700 rounded">
+              My Dashboard
+            </Link>
+            <Link href="/dashboard/customer/bookings" className="px-4 py-2 hover:bg-gray-700 rounded">
+              My Bookings
+            </Link>
+            <Link href="/dashboard/customer/orders" className="px-4 py-2 hover:bg-gray-700 rounded">
+              My Orders
+            </Link>
+          </>
+        )}
+      </nav>
     </aside>
   );
 }

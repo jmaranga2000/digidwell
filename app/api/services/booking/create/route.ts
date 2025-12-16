@@ -1,59 +1,41 @@
-import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { initiateStkPush } from "@/lib/mpesaUtils";
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/session";
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
+    const user = await requireAuth();
     const body = await req.json();
-    const { serviceId, userId } = body;
+    const { serviceId, phone, amountPaid } = body;
 
-    if (!serviceId || !userId) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+    if (!serviceId) {
+      return NextResponse.json({ error: "Service ID is required" }, { status: 400 });
     }
 
-    // Get service details
-    const service = await prisma.service.findUnique({
-      where: { id: serviceId },
-    });
-
+    const service = await prisma.service.findUnique({ where: { id: serviceId } });
     if (!service) {
       return NextResponse.json({ error: "Service not found" }, { status: 404 });
     }
 
-    // Create a booking in the DB with PENDING status
     const booking = await prisma.booking.create({
       data: {
         serviceId,
-        userId,
-        amount: service.price,
+        userId: user.id,
+        phone: phone || null,
+        amountPaid: amountPaid || null,
         status: "PENDING",
+      },
+      include: {
+        service: { include: { category: true, subCategory: true } },
+        user: true,
       },
     });
 
-    // Initiate M-Pesa payment
-    const stkResponse = await initiateStkPush({
-      amount: service.price,
-      phoneNumber: body.phoneNumber, // send user phone
-      accountReference: `Booking-${booking.id}`,
-      transactionDesc: `Payment for ${service.title}`,
-    });
-
-    // Save CheckoutRequestID for tracking
-    await prisma.booking.update({
-      where: { id: booking.id },
-      data: { checkoutRequestId: stkResponse.CheckoutRequestID },
-    });
-
-    return NextResponse.json({
-      message: "Booking created and payment initiated",
-      booking,
-      stkResponse,
-    });
-  } catch (error: any) {
-    console.error(error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ booking });
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+    return NextResponse.json({ error: "Unknown error occurred" }, { status: 500 });
   }
 }

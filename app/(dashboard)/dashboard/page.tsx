@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs"; // Clerk hook
+import { useRouter } from "next/navigation";
 import StatsCard from "../components/StatsCard";
 import BookingCard from "../components/BookingCard";
 import OrderItem from "../components/OrderItem";
 import PaymentTable from "../components/PaymentTable";
-
 
 type Booking = {
   id: string;
@@ -37,9 +38,21 @@ export default function CustomerDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
 
+  const { isSignedIn, user } = useUser(); // Clerk client hook
+  const router = useRouter();
+
   useEffect(() => {
-    fetchCustomerData();
-  }, []);
+    // Redirect if not signed in
+    if (isSignedIn === false) {
+      router.push("/auth/login");
+    }
+  }, [isSignedIn, router]);
+
+  useEffect(() => {
+    if (user) {
+      fetchCustomerData();
+    }
+  }, [user]);
 
   const fetchCustomerData = async () => {
     try {
@@ -79,10 +92,7 @@ export default function CustomerDashboardPage() {
         <div className="space-y-4">
           {bookings.length ? (
             bookings.map((booking) => (
-              <BookingCard
-                key={booking.id}
-                {...booking}
-              />
+              <BookingCard key={booking.id} {...booking} />
             ))
           ) : (
             <p className="text-muted-foreground">You have no bookings yet.</p>
@@ -95,9 +105,7 @@ export default function CustomerDashboardPage() {
         <h2 className="text-2xl font-bold mb-6">My Orders</h2>
         <div className="space-y-4">
           {orders.length ? (
-            orders.map((order) => (
-              <OrderItem key={order.id} {...order} />
-            ))
+            orders.map((order) => <OrderItem key={order.id} {...order} />)
           ) : (
             <p className="text-muted-foreground">No orders found.</p>
           )}

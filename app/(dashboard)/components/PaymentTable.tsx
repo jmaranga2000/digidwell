@@ -1,60 +1,44 @@
 "use client";
 
-import { Table } from "@/components/ui/table";
+import { Payment } from "@/types/payments";
 
-interface Payment {
-  id: string;
-  phone: string;
-  amount: number;
-  status: "SUCCESS" | "PENDING" | "FAILED";
-  serviceTitle: string;
-  createdAt: string;
+
+interface PaymentTableProps {
+  payments: Payment[];
 }
 
-export default function PaymentTable({ payments }: { payments: Payment[] }) {
-  const statusColor = (status: Payment["status"]) => {
-    switch (status) {
-      case "SUCCESS":
-        return "text-green-600";
-      case "PENDING":
-        return "text-yellow-500";
-      case "FAILED":
-        return "text-red-600";
-      default:
-        return "";
-    }
-  };
-
+export default function PaymentTable({ payments }: PaymentTableProps) {
   return (
-    <div className="w-full overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
-      <Table className="w-full text-left text-sm">
-        <thead className="bg-gray-100 dark:bg-gray-800">
+    <div className="overflow-x-auto border rounded-lg">
+      <table className="w-full text-sm">
+        <thead className="bg-muted">
           <tr>
-            <th className="p-4">Phone</th>
-            <th className="p-4">Service</th>
-            <th className="p-4">Amount</th>
-            <th className="p-4">Status</th>
-            <th className="p-4">Date</th>
+            <th className="px-4 py-3 text-left">Service</th>
+            <th className="px-4 py-3 text-left">Phone</th>
+            <th className="px-4 py-3 text-left">Amount</th>
+            <th className="px-4 py-3 text-left">Status</th>
+            <th className="px-4 py-3 text-left">Date</th>
           </tr>
         </thead>
 
         <tbody>
-          {payments.map((p) => (
-            <tr
-              key={p.id}
-              className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
-            >
-              <td className="p-4">{p.phone}</td>
-              <td className="p-4">{p.serviceTitle}</td>
-              <td className="p-4 font-semibold">KSh {p.amount}</td>
-              <td className={`p-4 font-semibold ${statusColor(p.status)}`}>
-                {p.status}
+          {payments.map((payment) => (
+            <tr key={payment.id} className="border-t">
+              <td className="px-4 py-3">
+                {payment.serviceTitle ?? "—"}
               </td>
-              <td className="p-4">{new Date(p.createdAt).toLocaleString()}</td>
+              <td className="px-4 py-3">{payment.phone}</td>
+              <td className="px-4 py-3">KES {payment.amount}</td>
+              <td className="px-4 py-3 font-medium">
+                {payment.status}
+              </td>
+              <td className="px-4 py-3">
+                {new Date(payment.createdAt).toLocaleDateString()}
+              </td>
             </tr>
           ))}
         </tbody>
-      </Table>
+      </table>
     </div>
   );
 }

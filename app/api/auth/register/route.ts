@@ -1,30 +1,34 @@
-import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { clerkClient } from "@clerk/nextjs/server";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const { email, password, name } = await req.json();
+
   try {
-    const { name, email, password } = await req.json();
+    const client = await clerkClient();
 
-    if (!email || !password)
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing)
-      return NextResponse.json({ error: "Email already exists" }, { status: 400 });
-
-    const hashed = await bcrypt.hash(password, 10);
+    // Correct format: emailAddresses is an array of { emailAddress, verified? }
+    const clerkUser = await client.users.createUser({
+      email_addresses: [{ email_address: email, verified: true }],
+      password,
+      first_name: name,
+    });
 
     await prisma.user.create({
       data: {
+        id: clerkUser.id,
+        email: clerkUser.emailAddresses[0].emailAddress,
         name,
-        email,
-        password: hashed,
+        role: "CUSTOMER",
       },
     });
 
-    return NextResponse.json({ message: "User created" });
-  } catch (error) {
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json({ message: "User registered successfully" });
+  } catch (err) {
+    if (err instanceof Error) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Unknown error occurred" }, { status: 400 });
   }
 }

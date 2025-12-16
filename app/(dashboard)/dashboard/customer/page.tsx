@@ -1,66 +1,62 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { Booking } from "@/types/bookings";
 import BookingCard from "../../components/BookingCard";
-import ServiceCard from "../../components/ServiceCard";
 
-type Service = {
-  id: string;
-  title: string;
-  description: string;
-  price: string;
-};
-
-type Booking = {
-  id: string;
-  serviceId: string;
-  serviceTitle: string;
-  customerName: string;
-  customerEmail: string;
-  status: "Pending" | "Confirmed" | "Cancelled";
-};
-
-export default function CustomerDashboard() {
-  const [services, setServices] = useState<Service[]>([]);
+export default function CustomerDashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const customerEmail = "customer@example.com"; // Replace with actual logged-in email
+  const { isSignedIn, user } = useUser();
+  const router = useRouter();
 
-  // Fetch services
   useEffect(() => {
-    fetch("/api/services/list")
-      .then((res) => res.json())
-      .then((data) => setServices(data.services));
-  }, []);
+    if (isSignedIn === false) {
+      router.push("/auth/login");
+    }
+  }, [isSignedIn, router]);
 
-  // Fetch customer bookings
   useEffect(() => {
-    fetch(`/api/services/booking/list?email=${customerEmail}`)
-      .then((res) => res.json())
-      .then((data) => setBookings(data.bookings));
-  }, [customerEmail]);
+    if (user) {
+      fetchCustomerData();
+    }
+  }, [user]);
+
+  const fetchCustomerData = async () => {
+    try {
+      const res = await fetch("/api/customer/bookings");
+      const data = await res.json();
+
+      // Normalize status to match Booking type
+      const normalizedBookings: Booking[] = data.bookings.map((b: any) => ({
+        id: b.id,
+        serviceTitle: b.serviceTitle,
+        customerName: b.customerName,
+        customerEmail: b.customerEmail,
+        status:
+          b.status === "SUCCESS" || b.status === "CONFIRMED"
+            ? "Confirmed"
+            : b.status === "CANCELED"
+            ? "Cancelled"
+            : "Pending",
+      }));
+
+      setBookings(normalizedBookings);
+    } catch (error) {
+      console.error("Failed to load bookings", error);
+    }
+  };
 
   return (
-    <div className="space-y-12">
-      {/* Available Services */}
+    <div className="space-y-12 p-6">
       <section>
-        <h2 className="text-2xl font-bold mb-4">Available Services</h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          {services.map((service) => (
-            <ServiceCard key={service.id} {...service} />
-          ))}
-        </div>
-      </section>
-
-      {/* My Bookings */}
-      <section>
-        <h2 className="text-2xl font-bold mb-4">My Bookings</h2>
+        <h2 className="text-2xl font-bold mb-6">My Bookings</h2>
         <div className="space-y-4">
           {bookings.length ? (
-            bookings.map((booking) => (
-              <BookingCard key={booking.id} {...booking} />
-            ))
+            bookings.map((booking) => <BookingCard key={booking.id} {...booking} />)
           ) : (
-            <p className="text-gray-500">You have no bookings yet.</p>
+            <p className="text-muted-foreground">You have no bookings yet.</p>
           )}
         </div>
       </section>

@@ -1,37 +1,47 @@
-import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/session";
 import { uploadImage } from "@/lib/cloudinary";
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const data = await req.formData();
-
-    const title = data.get("title")?.toString();
-    const description = data.get("description")?.toString();
-    const price = parseFloat(data.get("price")?.toString() || "0");
-    const imageFile = data.get("image") as File;
-
-    if (!title || !description || !price || !imageFile) {
-      return NextResponse.json({ error: "All fields are required" }, { status: 400 });
+    const user = await requireAuth();
+    if (user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Convert image file to base64
-    const buffer = Buffer.from(await imageFile.arrayBuffer());
-    const base64 = `data:${imageFile.type};base64,${buffer.toString("base64")}`;
+    const body = await req.json();
+    const { title, description, price, categoryId, subCategoryId, imageUrl } = body;
 
-    const uploadResult = await uploadImage(base64);
+    if (!title || !categoryId) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    let finalImageUrl = imageUrl;
+
+    // Optional: If sending image as base64 or file, you could use uploadImage()
+    // if (!imageUrl && body.imageFile) {
+    //   const uploadResult = await uploadImage(body.imageFile);
+    //   finalImageUrl = uploadResult.secure_url;
+    // }
 
     const service = await prisma.service.create({
       data: {
         title,
         description,
         price,
-        imageUrl: uploadResult.secure_url,
+        categoryId,
+        subCategoryId,
+        createdById: user.id,
+        imageUrl: finalImageUrl,
       },
     });
 
-    return NextResponse.json(service, { status: 201 });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ service });
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+    return NextResponse.json({ error: "Unknown error occurred" }, { status: 500 });
   }
 }

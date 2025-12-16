@@ -1,46 +1,45 @@
-"use client";
-
+import prisma from "@/lib/prisma";
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
-type BlogPost = {
-  slug: string;
-  title: string;
-  excerpt: string;
-  date: string;
-};
-
-export default function BlogPage() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/blog/list")
-      .then((res) => res.json())
-      .then((data) => setPosts(data.posts))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return <p className="text-center py-12">Loading posts...</p>;
+export default async function BlogPage() {
+  const posts = await prisma.blogPost.findMany({
+    where: { published: true },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      excerpt: true,
+      featuredImage: true,
+      createdAt: true,
+    },
+  });
 
   return (
-    <div className="container mx-auto px-4 py-12 space-y-8">
-      <h1 className="text-4xl font-bold text-center mb-8">Our Blog</h1>
-      {posts.length ? (
-        <div className="grid md:grid-cols-3 gap-6">
-          {posts.map((post) => (
-            <Link key={post.slug} href={`/blog/${post.slug}`}>
-              <a className="block bg-white dark:bg-gray-800 p-6 rounded-2xl shadow hover:shadow-lg transition">
-                <h2 className="font-bold text-xl mb-2">{post.title}</h2>
-                <p className="text-gray-600 dark:text-gray-300 mb-2">{post.excerpt}</p>
-                <p className="text-sm text-gray-400">{post.date}</p>
-              </a>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <p className="text-center text-gray-500">No blog posts found.</p>
-      )}
-    </div>
+    <main className="max-w-6xl mx-auto px-6 py-12">
+      <h1 className="text-4xl font-bold mb-10">Blog</h1>
+
+      <div className="grid md:grid-cols-3 gap-8">
+        {posts.map((post) => (
+          <Link
+            key={post.id}
+            href={`/blog/${post.slug}`}
+            className="border rounded-xl p-5 hover:shadow-md transition"
+          >
+            {post.featuredImage && (
+              <Image
+                src={post.featuredImage}
+                alt={post.title}
+                className="rounded-lg mb-4"
+              />
+            )}
+
+            <h2 className="text-xl font-semibold">{post.title}</h2>
+            <p className="text-gray-600 mt-2">{post.excerpt}</p>
+          </Link>
+        ))}
+      </div>
+    </main>
   );
 }

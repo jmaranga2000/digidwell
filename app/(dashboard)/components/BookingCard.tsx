@@ -1,15 +1,12 @@
 "use client";
 
 import { Select } from "@/components/ui/select";
+import { Booking } from "@/types/bookings";
 
-type BookingCardProps = {
-  id: string;
-  serviceTitle: string;
-  customerName: string;
-  customerEmail: string;
-  status: "Pending" | "Confirmed" | "Cancelled";
+
+interface BookingCardProps extends Booking {
   onUpdate?: (newStatus: "Pending" | "Confirmed" | "Cancelled") => void;
-};
+}
 
 export default function BookingCard({
   serviceTitle,
