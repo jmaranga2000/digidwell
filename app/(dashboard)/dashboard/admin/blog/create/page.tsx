@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import slugify from "slugify";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 export default function CreateBlogPage() {
+  const router = useRouter();
+
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [content, setContent] = useState("");
@@ -30,19 +33,17 @@ export default function CreateBlogPage() {
         imageUrl = await uploadImageToCloudinary(image, "blogs");
       }
 
-      const res = await fetch("/api/blog/create", {
+      const res = await fetch("/api/admin/blog/create", {
         method: "POST",
-        body: JSON.stringify({ title, slug, content, published, imageUrl }),
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, slug, content, published, imageUrl }),
       });
 
       if (!res.ok) throw new Error("Failed to create blog");
+
       alert("Blog created successfully!");
-      setTitle("");
-      setSlug("");
-      setContent("");
-      setPublished(false);
-      setImage(null);
+      // Redirect to blog list page in admin
+      router.push("/dashboard/admin/blog");
     } catch (err) {
       console.error(err);
       alert("Error creating blog");
@@ -52,8 +53,9 @@ export default function CreateBlogPage() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Create Blog Post</h1>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           type="text"
@@ -62,6 +64,7 @@ export default function CreateBlogPage() {
           onChange={(e) => handleSlugChange(e.target.value)}
           className="w-full p-2 border rounded"
         />
+
         <Input
           type="text"
           placeholder="Slug"
@@ -69,17 +72,20 @@ export default function CreateBlogPage() {
           readOnly
           className="w-full p-2 border rounded bg-gray-100"
         />
+
         <Textarea
           placeholder="Content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
           className="w-full p-2 border rounded h-64"
         />
+
         <Input
           type="file"
           accept="image/*"
           onChange={(e) => e.target.files && setImage(e.target.files[0])}
         />
+
         <label className="flex items-center gap-2">
           <Input
             type="checkbox"
@@ -88,6 +94,7 @@ export default function CreateBlogPage() {
           />
           Publish
         </label>
+
         <Button
           type="submit"
           className="px-4 py-2 bg-blue-600 text-white rounded"
