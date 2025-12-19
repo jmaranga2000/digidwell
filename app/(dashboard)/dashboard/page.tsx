@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useUser } from "@clerk/nextjs"; // Clerk hook
+import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import StatsCard from "../components/StatsCard";
 import BookingCard from "../components/BookingCard";
@@ -11,15 +11,12 @@ import PaymentTable from "../components/PaymentTable";
 type Booking = {
   id: string;
   serviceTitle: string;
-  customerName: string;
-  customerEmail: string;
   status: "Pending" | "Confirmed" | "Cancelled";
 };
 
 type Order = {
   id: string;
   serviceTitle: string;
-  customerName: string;
   status: "Pending" | "Completed" | "Cancelled";
   price: string;
 };
@@ -34,92 +31,65 @@ type Payment = {
 };
 
 export default function CustomerDashboardPage() {
+  const { isSignedIn, user } = useUser();
+  const router = useRouter();
+
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
 
-  const { isSignedIn, user } = useUser(); // Clerk client hook
-  const router = useRouter();
-
   useEffect(() => {
-    // Redirect if not signed in
     if (isSignedIn === false) {
       router.push("/auth/login");
     }
   }, [isSignedIn, router]);
 
   useEffect(() => {
-    if (user) {
-      fetchCustomerData();
-    }
+    if (user) fetchCustomerData();
   }, [user]);
 
   const fetchCustomerData = async () => {
     try {
       const [bookingsRes, ordersRes, paymentsRes] = await Promise.all([
-        fetch("/api/customer/bookings"),
-        fetch("/api/customer/orders"),
-        fetch("/api/customer/payments"),
+        fetch("/api/services/bookings/my"),
+        fetch("/api/orders/my"),
+        fetch("/api/payments/my"),
       ]);
 
-      const bookingsData = await bookingsRes.json();
-      const ordersData = await ordersRes.json();
-      const paymentsData = await paymentsRes.json();
-
-      setBookings(bookingsData.bookings || []);
-      setOrders(ordersData.orders || []);
-      setPayments(paymentsData.payments || []);
-    } catch (error) {
-      console.error("Failed to load customer dashboard data", error);
+      setBookings((await bookingsRes.json()).bookings ?? []);
+      setOrders((await ordersRes.json()).orders ?? []);
+      setPayments((await paymentsRes.json()).payments ?? []);
+    } catch (err) {
+      console.error("Dashboard load failed", err);
     }
   };
 
   return (
     <div className="space-y-12 p-6">
-      {/* Stats */}
       <section>
         <h2 className="text-2xl font-bold mb-6">Overview</h2>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <StatsCard title="Total Bookings" value={bookings.length} />
+        <div className="grid gap-6 sm:grid-cols-3">
+          <StatsCard title="Bookings" value={bookings.length} />
           <StatsCard title="Orders" value={orders.length} />
           <StatsCard title="Payments" value={payments.length} />
         </div>
       </section>
 
-      {/* My Bookings */}
       <section>
         <h2 className="text-2xl font-bold mb-6">My Bookings</h2>
-        <div className="space-y-4">
-          {bookings.length ? (
-            bookings.map((booking) => (
-              <BookingCard key={booking.id} {...booking} />
-            ))
-          ) : (
-            <p className="text-muted-foreground">You have no bookings yet.</p>
-          )}
-        </div>
+        {bookings.map((booking) => (
+          <BookingCard
+            key={booking.id}
+            {...booking}
+            customerName={user?.fullName ?? "Customer"}
+            customerEmail={user?.primaryEmailAddress?.emailAddress ?? ""}
+          />
+        ))}
       </section>
 
-      {/* Orders */}
-      <section>
-        <h2 className="text-2xl font-bold mb-6">My Orders</h2>
-        <div className="space-y-4">
-          {orders.length ? (
-            orders.map((order) => <OrderItem key={order.id} {...order} />)
-          ) : (
-            <p className="text-muted-foreground">No orders found.</p>
-          )}
-        </div>
-      </section>
-
-      {/* Payments */}
       <section>
         <h2 className="text-2xl font-bold mb-6">Payment History</h2>
-        {payments.length ? (
-          <PaymentTable payments={payments} />
-        ) : (
-          <p className="text-muted-foreground">No payments recorded.</p>
-        )}
+        <PaymentTable payments={payments} />
       </section>
     </div>
   );
