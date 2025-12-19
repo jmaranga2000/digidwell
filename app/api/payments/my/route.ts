@@ -7,16 +7,38 @@ export async function GET() {
     const user = await requireAuth();
 
     const payments = await prisma.payment.findMany({
-      where: { booking: { userId: user.id } },
-      include: { booking: { include: { service: true } } },
-      orderBy: { createdAt: "desc" },
+      where: {
+        booking: {
+          userId: user.id,
+        },
+      },
+      include: {
+        booking: {
+          include: {
+            service: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
 
-    return NextResponse.json({ payments });
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      return NextResponse.json({ error: err.message }, { status: 500 });
-    }
-    return NextResponse.json({ error: "Unknown error occurred" }, { status: 500 });
+    const formatted = payments.map((p) => ({
+      id: p.id,
+      phone: p.phone,
+      amount: p.amountPaid,
+      status: p.status,
+      serviceTitle: p.booking.service.title,
+      createdAt: p.createdAt,
+    }));
+
+    return NextResponse.json({ payments: formatted });
+  } catch (error) {
+    console.error("Payments fetch error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch payments" },
+      { status: 500 }
+    );
   }
 }
