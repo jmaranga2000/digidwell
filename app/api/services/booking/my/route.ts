@@ -1,17 +1,21 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/session";
 
 export async function GET() {
   try {
-    // Authenticate the user
     const user = await requireAuth();
 
-    // Fetch only this user's bookings
     const bookings = await prisma.booking.findMany({
-      where: { userId: user.id },
-      include: { service: true },
-      orderBy: { createdAt: "desc" },
+      where: {
+        userId: user.id,
+      },
+      include: {
+        service: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
 
     const formatted = bookings.map((b) => ({
@@ -22,8 +26,11 @@ export async function GET() {
     }));
 
     return NextResponse.json({ bookings: formatted });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Failed to fetch bookings" }, { status: 500 });
+  } catch (error) {
+    console.error("Bookings fetch error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch bookings" },
+      { status: 500 }
+    );
   }
 }
