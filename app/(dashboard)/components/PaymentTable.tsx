@@ -1,9 +1,9 @@
 "use client";
 
-import { Payment } from "@/types/payment";
+import { AdminPayment } from "@/types/payment";
 
 interface PaymentTableProps {
-  payments: Payment[];
+  payments: AdminPayment[];
 }
 
 export default function PaymentTable({ payments }: PaymentTableProps) {
@@ -21,28 +21,30 @@ export default function PaymentTable({ payments }: PaymentTableProps) {
         </thead>
 
         <tbody>
-          {payments.map((p) => (
-            <tr key={p.id} className="border-t">
-              <td className="px-4 py-3">{p.serviceTitle}</td>
-              <td className="px-4 py-3">{p.phone ?? "—"}</td>
+          {payments.map((payment) => (
+            <tr key={payment.id} className="border-t">
+              <td className="px-4 py-3">{payment.serviceTitle}</td>
+              <td className="px-4 py-3">{payment.phone ?? "—"}</td>
               <td className="px-4 py-3">
-                {p.amount ? `KES ${p.amount.toLocaleString()}` : "—"}
+                {payment.amount !== undefined
+                  ? `KES ${payment.amount.toLocaleString()}`
+                  : "—"}
               </td>
               <td className="px-4 py-3 font-medium">
                 <span
                   className={
-                    p.status === "SUCCESS"
+                    payment.status === "SUCCESS"
                       ? "text-green-600"
-                      : p.status === "PENDING"
+                      : payment.status === "PENDING"
                       ? "text-yellow-600"
                       : "text-red-600"
                   }
                 >
-                  {p.status}
+                  {payment.status}
                 </span>
               </td>
               <td className="px-4 py-3">
-                {new Date(p.createdAt).toLocaleDateString()}
+                {new Date(payment.createdAt).toLocaleString()}
               </td>
             </tr>
           ))}
