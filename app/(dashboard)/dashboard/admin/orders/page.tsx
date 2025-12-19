@@ -3,27 +3,19 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import OrderItem from "@/app/dashboard/components/OrderItem";
-
-type Order = {
-  id: string;
-  customerName: string;
-  customerEmail: string;
-  serviceTitle: string;
-  status: "Pending" | "Processing" | "Completed" | "Cancelled";
-  price: string;
-};
+import OrderItem from "@/app/(dashboard)/components/OrderItem";
+import { AdminOrder, OrderStatus } from "@/types/order";
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
   const fetchOrders = async () => {
     setFetching(true);
     try {
-      const res = await fetch("/api/order/list");
-      if (!res.ok) throw new Error("Failed to fetch orders");
+      const res = await fetch("/api/admin/orders");
+      if (!res.ok) throw new Error();
       const data = await res.json();
       setOrders(data.orders);
     } catch {
@@ -37,96 +29,81 @@ export default function AdminOrdersPage() {
     fetchOrders();
   }, []);
 
-  const updateOrderStatus = async (orderId: string, newStatus: Order["status"]) => {
+  const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/order/update", {
-        method: "POST",
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, status: newStatus }),
+        body: JSON.stringify({ status }),
       });
-      const data = await res.json();
 
-      if (!res.ok) {
-        toast.error(data.error || "Failed to update order status.");
-        return;
-      }
+      if (!res.ok) throw new Error();
 
       setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+        prev.map((o) => (o.id === orderId ? { ...o, status } : o))
       );
-      toast.success(`Order marked as ${newStatus.toLowerCase()}`);
+
+      toast.success(`Order marked as ${status}`);
     } catch {
-      toast.error("Unexpected error. Please try again.");
+      toast.error("Failed to update order");
     } finally {
       setLoading(false);
     }
   };
 
   const deleteOrder = async (orderId: string) => {
-    if (!confirm("Are you sure you want to delete this order?")) return;
+    if (!confirm("Delete this order permanently?")) return;
     try {
-      const res = await fetch(`/api/order/delete/${orderId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete order");
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) throw new Error();
 
       setOrders((prev) => prev.filter((o) => o.id !== orderId));
-      toast.success("Order deleted successfully!");
+      toast.success("Order deleted");
     } catch {
-      toast.error("Could not delete order.");
+      toast.error("Could not delete order");
     }
   };
 
-  if (fetching) return <p className="text-gray-500">Loading orders...</p>;
+  if (fetching) return <p className="text-muted-foreground">Loading orders…</p>;
 
   return (
     <div className="space-y-8">
-      <h2 className="text-2xl font-bold">All Orders</h2>
+      <h2 className="text-2xl font-bold">Orders</h2>
 
       {orders.length ? (
-        <div className="grid gap-6">
+        <div className="space-y-6">
           {orders.map((order) => (
-            <div key={order.id} className="flex flex-col gap-2">
+            <div key={order.id} className="space-y-2">
               <OrderItem
                 id={order.id}
-                serviceTitle={order.serviceTitle}
-                customerName={order.customerName}
+                serviceTitle={order.service.title}
+                customerName={order.customer.name || order.customer.email}
                 status={order.status}
-                price={order.price}
+                price={`KES ${order.amount.toLocaleString()}`}
               />
 
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex flex-wrap gap-2">
+                {(
+                  ["pending", "paid", "processing", "completed", "cancelled"] as OrderStatus[]
+                ).map((s) => (
+                  <Button
+                    key={s}
+                    onClick={() => updateOrderStatus(order.id, s)}
+                    disabled={loading}
+                    variant={order.status === s ? "default" : "outline"}
+                  >
+                    {s}
+                  </Button>
+                ))}
+
                 <Button
-                  onClick={() => updateOrderStatus(order.id, "Pending")}
+                  variant="destructive"
                   disabled={loading}
-                  className="px-3 py-1 bg-yellow-600 text-white rounded"
-                >
-                  Pending
-                </Button>
-                <Button
-                  onClick={() => updateOrderStatus(order.id, "Processing")}
-                  disabled={loading}
-                  className="px-3 py-1 bg-blue-600 text-white rounded"
-                >
-                  Processing
-                </Button>
-                <Button
-                  onClick={() => updateOrderStatus(order.id, "Completed")}
-                  disabled={loading}
-                  className="px-3 py-1 bg-green-600 text-white rounded"
-                >
-                  Completed
-                </Button>
-                <Button
-                  onClick={() => updateOrderStatus(order.id, "Cancelled")}
-                  disabled={loading}
-                  className="px-3 py-1 bg-red-600 text-white rounded"
-                >
-                  Cancel
-                </Button>
-                <Button
                   onClick={() => deleteOrder(order.id)}
-                  disabled={loading}
-                  className="px-3 py-1 bg-destructive text-white rounded"
                 >
                   Delete
                 </Button>
@@ -135,7 +112,7 @@ export default function AdminOrdersPage() {
           ))}
         </div>
       ) : (
-        <p className="text-gray-500 dark:text-gray-300">No orders available.</p>
+        <p className="text-muted-foreground">No orders available.</p>
       )}
     </div>
   );
