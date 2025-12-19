@@ -1,42 +1,23 @@
-"use client";
+// app/(dashboard)/admin/layout.tsx
+import React from "react";
+import AdminSidebar from "@/app/(dashboard)/components/AdminSidebar";
 
-import { ReactNode, useEffect, useState } from "react";
-import { redirect } from "next/navigation";
-import Sidebar from "../../components/Sidebar";
-import Topbar from "../../components/Topbar";
-import { getAuthUser } from "@/lib/session";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: "admin" | "customer";
+interface AdminLayoutProps {
+  children: React.ReactNode;
 }
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    async function loadUser() {
-      const authUser = await getAuthUser();
-      if (!authUser) redirect("/auth/login");
-      if (authUser.role !== "admin") redirect("/dashboard");
-      setUser(authUser);
-    }
-    loadUser();
-  }, []);
-
-  if (!user) return null; // prevent flashing
-
+export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} user={user} />
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white border-r shadow-md">
+        <AdminSidebar />
+      </aside>
 
-      <div className="flex flex-col flex-1 ml-64">
-        <Topbar user={user} setSidebarOpen={setSidebarOpen} />
-        <main className="flex-1 overflow-auto p-6">{children}</main>
-      </div>
+      {/* Main Content */}
+      <main className="flex-1 overflow-auto p-6">
+        {children}
+      </main>
     </div>
   );
 }
