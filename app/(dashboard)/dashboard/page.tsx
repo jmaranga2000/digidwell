@@ -38,14 +38,18 @@ export default function CustomerDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
 
+  // Redirect unauthenticated users
   useEffect(() => {
     if (isSignedIn === false) {
       router.push("/auth/login");
     }
   }, [isSignedIn, router]);
 
+  // Load dashboard data
   useEffect(() => {
-    if (user) fetchCustomerData();
+    if (user) {
+      fetchCustomerData();
+    }
   }, [user]);
 
   const fetchCustomerData = async () => {
@@ -56,40 +60,77 @@ export default function CustomerDashboardPage() {
         fetch("/api/payments/my"),
       ]);
 
-      setBookings((await bookingsRes.json()).bookings ?? []);
-      setOrders((await ordersRes.json()).orders ?? []);
-      setPayments((await paymentsRes.json()).payments ?? []);
-    } catch (err) {
-      console.error("Dashboard load failed", err);
+      const bookingsJson = await bookingsRes.json();
+      const ordersJson = await ordersRes.json();
+      const paymentsJson = await paymentsRes.json();
+
+      setBookings(bookingsJson.bookings ?? []);
+      setOrders(ordersJson.orders ?? []);
+      setPayments(paymentsJson.payments ?? []);
+    } catch (error) {
+      console.error("Failed to load customer dashboard data", error);
     }
   };
 
   return (
     <div className="space-y-12 p-6">
+      {/* Overview */}
       <section>
         <h2 className="text-2xl font-bold mb-6">Overview</h2>
-        <div className="grid gap-6 sm:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <StatsCard title="Bookings" value={bookings.length} />
           <StatsCard title="Orders" value={orders.length} />
           <StatsCard title="Payments" value={payments.length} />
         </div>
       </section>
 
+      {/* Bookings */}
       <section>
         <h2 className="text-2xl font-bold mb-6">My Bookings</h2>
-        {bookings.map((booking) => (
-          <BookingCard
-            key={booking.id}
-            {...booking}
-            customerName={user?.fullName ?? "Customer"}
-            customerEmail={user?.primaryEmailAddress?.emailAddress ?? ""}
-          />
-        ))}
+        <div className="space-y-4">
+          {bookings.length ? (
+            bookings.map((booking) => (
+              <BookingCard
+                key={booking.id}
+                id={booking.id}
+                serviceTitle={booking.serviceTitle}
+                status={booking.status}
+                customerName={user?.fullName ?? "Customer"}
+                customerEmail={
+                  user?.primaryEmailAddress?.emailAddress ?? ""
+                }
+              />
+            ))
+          ) : (
+            <p className="text-muted-foreground">
+              You have no bookings yet.
+            </p>
+          )}
+        </div>
       </section>
 
+      {/* Orders */}
+      <section>
+        <h2 className="text-2xl font-bold mb-6">My Orders</h2>
+        <div className="space-y-4">
+          {orders.length ? (
+            orders.map((order) => (
+              <OrderItem key={order.id} {...order} />
+            ))
+          ) : (
+            <p className="text-muted-foreground">No orders found.</p>
+          )}
+        </div>
+      </section>
+
+      {/* Payments */}
       <section>
         <h2 className="text-2xl font-bold mb-6">Payment History</h2>
-        <PaymentTable payments={payments} />
+        {payments.length ? (
+          <PaymentTable payments={payments} />
+        ) : (
+          <p className="text-muted-foreground">No payments recorded.</p>
+        )}
       </section>
     </div>
   );
