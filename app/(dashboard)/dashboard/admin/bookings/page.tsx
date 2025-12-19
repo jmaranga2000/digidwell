@@ -13,6 +13,7 @@ export default function AdminBookingsPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/services/bookings/all");
+      if (!res.ok) throw new Error("Failed to fetch bookings");
       const data = await res.json();
       setBookings(data.bookings ?? []);
     } catch (err) {
@@ -36,23 +37,6 @@ export default function AdminBookingsPage() {
       setBookings((prev) =>
         prev.map((b) => (b.id === id ? { ...b, status } : b))
       );
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const updateNote = async (id: string, note: string) => {
-    try {
-      const res = await fetch(`/api/services/bookings/update/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note }),
-      });
-      if (res.ok) {
-        setBookings((prev) =>
-          prev.map((b) => (b.id === id ? { ...b, note } : b))
-        );
-      }
     } catch (err) {
       console.error(err);
     }
@@ -95,7 +79,19 @@ export default function AdminBookingsPage() {
                   onClick={() => {
                     const newNote = prompt("Enter new note:", b.note || "");
                     if (!newNote) return;
-                    updateNote(b.id, newNote);
+                    fetch(`/api/services/bookings/update/${b.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ note: newNote }),
+                    }).then((res) => {
+                      if (res.ok) {
+                        setBookings((prev) =>
+                          prev.map((bk) =>
+                            bk.id === b.id ? { ...bk, note: newNote } : bk
+                          )
+                        );
+                      }
+                    });
                   }}
                   className="bg-yellow-500 text-white"
                 >
