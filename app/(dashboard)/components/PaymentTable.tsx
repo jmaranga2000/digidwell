@@ -1,7 +1,6 @@
 "use client";
 
-import { Payment } from "@/types/payments";
-
+import { Payment } from "@/types/payment";
 
 interface PaymentTableProps {
   payments: Payment[];
@@ -9,8 +8,8 @@ interface PaymentTableProps {
 
 export default function PaymentTable({ payments }: PaymentTableProps) {
   return (
-    <div className="overflow-x-auto border rounded-lg">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto rounded-xl border bg-background">
+      <table className="min-w-full text-sm">
         <thead className="bg-muted">
           <tr>
             <th className="px-4 py-3 text-left">Service</th>
@@ -22,18 +21,28 @@ export default function PaymentTable({ payments }: PaymentTableProps) {
         </thead>
 
         <tbody>
-          {payments.map((payment) => (
-            <tr key={payment.id} className="border-t">
+          {payments.map((p) => (
+            <tr key={p.id} className="border-t">
+              <td className="px-4 py-3">{p.serviceTitle}</td>
+              <td className="px-4 py-3">{p.phone ?? "—"}</td>
               <td className="px-4 py-3">
-                {payment.serviceTitle ?? "—"}
+                {p.amount ? `KES ${p.amount.toLocaleString()}` : "—"}
               </td>
-              <td className="px-4 py-3">{payment.phone}</td>
-              <td className="px-4 py-3">KES {payment.amount}</td>
               <td className="px-4 py-3 font-medium">
-                {payment.status}
+                <span
+                  className={
+                    p.status === "SUCCESS"
+                      ? "text-green-600"
+                      : p.status === "PENDING"
+                      ? "text-yellow-600"
+                      : "text-red-600"
+                  }
+                >
+                  {p.status}
+                </span>
               </td>
               <td className="px-4 py-3">
-                {new Date(payment.createdAt).toLocaleDateString()}
+                {new Date(p.createdAt).toLocaleDateString()}
               </td>
             </tr>
           ))}
