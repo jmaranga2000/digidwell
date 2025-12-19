@@ -1,19 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CustomerCard } from "@/components/cards/customer-card";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import CustomerCard from "@/app/(dashboard)/components/CustomerCard"; // Adjust import if needed
 
-type Customer = {
+// Define type for customer
+export interface Customer {
   id: string;
   name: string;
   email: string;
   phone?: string;
-};
+}
 
-export default function AdminCustomersPage() {
+export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function AdminCustomersPage() {
       const res = await fetch("/api/admin/customers");
       if (!res.ok) throw new Error("Failed to fetch customers");
       const data = await res.json();
-      setCustomers(data.customers);
+      setCustomers(data.customers ?? []);
     } catch (err) {
       console.error(err);
       toast.error("Could not load customers.");
@@ -46,11 +47,10 @@ export default function AdminCustomersPage() {
   // Delete a customer
   const handleDeleteCustomer = async (id: string) => {
     if (!confirm("Are you sure you want to delete this customer?")) return;
-
     try {
       const res = await fetch(`/api/admin/customers/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete customer");
-      setCustomers(customers.filter((c) => c.id !== id));
+      setCustomers((prev) => prev.filter((c) => c.id !== id));
       toast.success("Customer deleted successfully!");
     } catch (err) {
       console.error(err);
@@ -61,16 +61,18 @@ export default function AdminCustomersPage() {
   if (loading) return <p className="text-gray-500">Loading customers...</p>;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">All Customers</h2>
+        <h1 className="text-2xl font-bold">All Customers</h1>
         <Button onClick={() => router.push("/dashboard/admin/customers/create")}>
           Add Customer
         </Button>
       </div>
 
-      {customers.length ? (
-        <div className="grid md:grid-cols-3 gap-6">
+      {customers.length === 0 ? (
+        <p className="text-gray-500 dark:text-gray-300">No customers found.</p>
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {customers.map((customer) => (
             <CustomerCard
               key={customer.id}
@@ -83,8 +85,6 @@ export default function AdminCustomersPage() {
             />
           ))}
         </div>
-      ) : (
-        <p className="text-gray-500 dark:text-gray-300">No customers found.</p>
       )}
     </div>
   );
