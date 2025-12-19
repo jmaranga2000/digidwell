@@ -2,95 +2,84 @@
 
 import { useEffect, useState } from "react";
 import AdminCard from "../../components/AdminCard";
-import BookingTable from "../../components/BookingTable";
 import PaymentTable from "../../components/PaymentTable";
+import { AdminPayment } from "@/types/payment";
 
-// ----------------- Types -----------------
-export type BookingStatus = "Pending" | "Confirmed" | "Cancelled";
+type BookingStatus = "Pending" | "Confirmed" | "Cancelled";
 
-export interface AdminBooking {
-  id: string;
-  note?: string;
-  status: BookingStatus;
-  createdAt: string;
-  user: { id: string; name: string | null; email: string };
-  service: { id: string; title: string };
-}
+type Stats = {
+  totalBookings: number;
+  pending: number;
+  confirmed: number;
+  cancelled: number;
+};
 
-export interface AdminPayment {
-  id: string;
-  amount: number;
-  phone: string;
-  status: string;
-  serviceTitle: string;
-  createdAt: string;
-}
-
-// ----------------- Component -----------------
 export default function AdminDashboard() {
-  const [bookings, setBookings] = useState<AdminBooking[]>([]);
+  const [stats, setStats] = useState<Stats>({
+    totalBookings: 0,
+    pending: 0,
+    confirmed: 0,
+    cancelled: 0,
+  });
   const [payments, setPayments] = useState<AdminPayment[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const stats = {
-    totalBookings: bookings.length,
-    pending: bookings.filter((b) => b.status === "Pending").length,
-    confirmed: bookings.filter((b) => b.status === "Confirmed").length,
-    cancelled: bookings.filter((b) => b.status === "Cancelled").length,
-    totalPayments: payments.length,
-    totalRevenue: payments.reduce((acc, p) => acc + p.amount, 0),
-  };
-
   useEffect(() => {
-    async function fetchAdminData() {
+    async function fetchDashboardData() {
+      setLoading(true);
       try {
-        const [bookingsRes, paymentsRes] = await Promise.all([
-          fetch("/api/services/bookings/all"),
-          fetch("/api/services/payments/admin"),
-        ]);
+        // Fetch all bookings
+        const bookingsRes = await fetch("/api/services/bookings/all");
+        const bookingsData = await bookingsRes.json();
+        const bookings = bookingsData.bookings || [];
 
-        const bookingsData: AdminBooking[] = await bookingsRes.json();
-        const paymentsData: AdminPayment[] = await paymentsRes.json();
+        // Compute booking stats
+        const newStats: Stats = {
+          totalBookings: bookings.length,
+          pending: bookings.filter((b: any) => b.status === "Pending").length,
+          confirmed: bookings.filter((b: any) => b.status === "Confirmed").length,
+          cancelled: bookings.filter((b: any) => b.status === "Cancelled").length,
+        };
+        setStats(newStats);
 
-        setBookings(bookingsData.bookings || []);
-        setPayments(paymentsData.payments || []);
-      } catch (error) {
-        console.error("Failed to fetch admin data:", error);
+        // Fetch all payments
+        const paymentsRes = await fetch("/api/services/payments/admin");
+        const paymentsData = await paymentsRes.json();
+        const paymentsList: AdminPayment[] = paymentsData.payments || [];
+        setPayments(paymentsList);
+      } catch (err) {
+        console.error("Failed to fetch admin dashboard data", err);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchAdminData();
+    fetchDashboardData();
   }, []);
 
   if (loading) return <p className="p-6 text-muted-foreground">Loading admin dashboard…</p>;
 
   return (
     <div className="space-y-12 p-6">
-      {/* Dashboard Stats */}
+      {/* Booking Stats */}
       <section>
         <h2 className="text-2xl font-bold mb-6">Admin Overview</h2>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-6">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <AdminCard title="Total Bookings" count={stats.totalBookings} />
           <AdminCard title="Pending" count={stats.pending} />
           <AdminCard title="Confirmed" count={stats.confirmed} />
           <AdminCard title="Cancelled" count={stats.cancelled} />
-          <AdminCard title="Total Payments" count={stats.totalPayments} />
-          <AdminCard title="Total Revenue" count={`$${stats.totalRevenue}`} />
         </div>
       </section>
 
-      {/* Bookings Table */}
-      <section>
-        <h2 className="text-2xl font-bold mb-6">Manage Bookings</h2>
-        <BookingTable bookings={bookings} setBookings={setBookings} />
-      </section>
-
-      {/* Payments Table */}
+      {/* Payment Records */}
       <section>
         <h2 className="text-2xl font-bold mb-6">Payment Records</h2>
-        <PaymentTable payments={payments} />
+        {payments.length > 0 ? (
+          <PaymentTable payments={payments} />
+        ) : (
+          <p className="text-muted-foreground">No payments recorded yet.</p>
+        )}
       </section>
     </div>
   );
