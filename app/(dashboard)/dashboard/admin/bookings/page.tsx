@@ -1,29 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import BookingCard from "@/app/dashboard/components/BookingCard";
+import AdminBookingCard from "@/app/dashboard/components/AdminBookingCard";
+import { AdminBooking } from "@/types/bookings";
 import { Button } from "@/components/ui/button";
 
-type Booking = {
-  id: string;
-  note: string;
-  date: string;
-  user: { id: string; name: string | null; email: string };
-  service: { id: string; title: string };
-  status: "Pending" | "Confirmed" | "Cancelled";
-};
-
 export default function AdminBookingsPage() {
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookings, setBookings] = useState<AdminBooking[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/services/booking/all");
-      if (!res.ok) throw new Error("Failed to fetch bookings");
-      const data: Booking[] = await res.json();
-      setBookings(data);
+      const res = await fetch("/api/services/bookings/all");
+      const data = await res.json();
+      setBookings(data.bookings ?? []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -35,15 +26,13 @@ export default function AdminBookingsPage() {
     fetchBookings();
   }, []);
 
-  const changeStatus = async (id: string, status: Booking["status"]) => {
+  const updateStatus = async (id: string, status: AdminBooking["status"]) => {
     try {
-      const res = await fetch("/api/services/booking/update", {
+      await fetch("/api/services/bookings/update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookingId: id, status }),
       });
-      if (!res.ok) throw new Error("Failed to update booking");
-
       setBookings((prev) =>
         prev.map((b) => (b.id === id ? { ...b, status } : b))
       );
@@ -52,13 +41,27 @@ export default function AdminBookingsPage() {
     }
   };
 
+  const updateNote = async (id: string, note: string) => {
+    try {
+      const res = await fetch(`/api/services/bookings/update/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note }),
+      });
+      if (res.ok) {
+        setBookings((prev) =>
+          prev.map((b) => (b.id === id ? { ...b, note } : b))
+        );
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this booking?")) return;
     try {
-      const res = await fetch(`/api/services/booking/delete/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete booking");
+      await fetch(`/api/services/bookings/delete/${id}`, { method: "DELETE" });
       setBookings((prev) => prev.filter((b) => b.id !== id));
     } catch (err) {
       console.error(err);
@@ -77,13 +80,9 @@ export default function AdminBookingsPage() {
         <div className="space-y-4">
           {bookings.map((b) => (
             <div key={b.id} className="relative">
-              <BookingCard
-                id={b.id}
-                serviceTitle={b.service.title}
-                customerName={b.user.name || b.user.email}
-                customerEmail={b.user.email}
-                status={b.status}
-                onUpdate={(status) => changeStatus(b.id, status)}
+              <AdminBookingCard
+                {...b}
+                onUpdate={(status) => updateStatus(b.id, status)}
               />
               <div className="mt-2 flex gap-2">
                 <Button
@@ -94,21 +93,9 @@ export default function AdminBookingsPage() {
                 </Button>
                 <Button
                   onClick={() => {
-                    const newNote = prompt("Enter new note:", b.note);
+                    const newNote = prompt("Enter new note:", b.note || "");
                     if (!newNote) return;
-                    fetch(`/api/services/booking/update/${b.id}`, {
-                      method: "PATCH",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ note: newNote }),
-                    }).then((res) => {
-                      if (res.ok) {
-                        setBookings((prev) =>
-                          prev.map((bk) =>
-                            bk.id === b.id ? { ...bk, note: newNote } : bk
-                          )
-                        );
-                      }
-                    });
+                    updateNote(b.id, newNote);
                   }}
                   className="bg-yellow-500 text-white"
                 >
