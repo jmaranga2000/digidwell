@@ -27,7 +27,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     loadUser();
   }, []);
 
-  if (!user) return null;
+  if (!user) return null; // prevent flashing
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
