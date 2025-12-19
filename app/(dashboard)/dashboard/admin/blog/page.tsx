@@ -1,60 +1,81 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Table } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
-type BlogPost = {
+type Blog = {
   id: string;
   title: string;
-  published: boolean;
   createdAt: string;
 };
 
 export default function AdminBlogPage() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  const fetchBlogs = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/blog");
+      const data = await res.json();
+      setBlogs(data.blogs ?? []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch("/api/blog/admin/list")
-      .then((res) => res.json())
-      .then((data) => setPosts(data.posts));
+    fetchBlogs();
   }, []);
 
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this blog?")) return;
+    try {
+      const res = await fetch(`/api/admin/blog/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+      setBlogs((prev) => prev.filter((b) => b.id !== id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  if (loading) return <p>Loading blogs...</p>;
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Manage Blog</h1>
-        <Link
-          href="/dashboard/admin/blog/create"
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          New Post
-        </Link>
+        <h1 className="text-2xl font-bold">Blog Posts</h1>
+        <Button onClick={() => router.push("/dashboard/admin/blog/create")}>
+          Create New
+        </Button>
       </div>
 
-      <Table className="w-full border">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="p-3 text-left">Title</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {posts.map((post) => (
-            <tr key={post.id} className="border-t">
-              <td className="p-3">{post.title}</td>
-              <td>{post.published ? "Published" : "Draft"}</td>
-              <td className="space-x-3">
-                <Link href={`/dashboard/admin/blog/edit/${post.id}`}>
+      {blogs.length === 0 ? (
+        <p>No blogs found.</p>
+      ) : (
+        <div className="space-y-4">
+          {blogs.map((b) => (
+            <div key={b.id} className="flex justify-between items-center bg-white p-4 rounded shadow">
+              <div>
+                <h2 className="font-semibold">{b.title}</h2>
+                <p className="text-sm text-gray-500">{new Date(b.createdAt).toLocaleDateString()}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={() => router.push(`/dashboard/admin/blog/edit/${b.id}`)}>
                   Edit
-                </Link>
-              </td>
-            </tr>
+                </Button>
+                <Button onClick={() => handleDelete(b.id)} className="bg-red-600 text-white">
+                  Delete
+                </Button>
+              </div>
+            </div>
           ))}
-        </tbody>
-      </Table>
+        </div>
+      )}
     </div>
   );
 }
