@@ -1,28 +1,25 @@
-import { NextResponse } from "next/server";
-import { uploadImage } from "@/lib/cloudinary";
+import { NextRequest, NextResponse } from "next/server";
+import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import { requireAuth } from "@/lib/session";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    await requireAuth(); // Only authenticated users can upload images
+    const user = await requireAuth();
 
-    const data = await req.formData();
-    const file = data.get("image") as File;
+    const formData = await req.formData();
+    const file = formData.get("file") as File;
+    const folder = formData.get("folder")?.toString() || `user_${user.id}`;
 
     if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const base64 = `data:${file.type};base64,${buffer.toString("base64")}`;
+    // Upload file to Cloudinary
+    const fileUrl = await uploadImageToCloudinary(file, folder);
 
-    const result = await uploadImage(base64);
-
-    return NextResponse.json({ url: result.secure_url });
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      return NextResponse.json({ error: err.message }, { status: 500 });
-    }
-    return NextResponse.json({ error: "Unknown error occurred" }, { status: 500 });
+    return NextResponse.json({ fileUrl });
+  } catch (error) {
+    console.error("Cloudinary upload error:", error);
+    return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });
   }
 }
