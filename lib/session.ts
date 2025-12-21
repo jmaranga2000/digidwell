@@ -5,36 +5,35 @@ import prisma from "./prisma";
 export interface AuthUser {
   id: string;
   email: string;
-  name?: string | null;
+  name?: string;
   role: "ADMIN" | "CUSTOMER";
 }
 
 // Get session cookie value
 export function getSessionToken(): string | null {
-try {
-  const cookieStore = cookies();
-  const cookie = cookieStore.get("session_token"); // change name to your session cookie name
-  return cookie?.value ?? null;
-} catch (error) {
-  console.error("Error getting session token:", error);
-  return null;
-}
+  try {
+    const cookieStore = cookies();
+    const sessionCookie = cookieStore.get("session_token"); // ensure this matches your login cookie
+    return sessionCookie?.value ?? null;
+  } catch (error) {
+    console.error("Error getting session token:", error);
+    return null;
+  }
 }
 
 // Require user authentication
 export async function requireAuth(): Promise<AuthUser> {
   const token = getSessionToken();
   if (!token) {
-    throw new Error("Not authenticated");
+    throw new Error("Unauthenticated: session token missing");
   }
 
-  // Look up user in database by session token
   const user = await prisma.user.findUnique({
-    where: { sessionToken: token }, // make sure your User model has sessionToken
+    where: { sessionToken: token },
   });
 
   if (!user) {
-    throw new Error("User not found");
+    throw new Error("Unauthenticated: user not found");
   }
 
   return {
@@ -49,7 +48,16 @@ export async function requireAuth(): Promise<AuthUser> {
 export async function requireAdmin(): Promise<AuthUser> {
   const user = await requireAuth();
   if (user.role !== "ADMIN") {
-    throw new Error("Unauthorized");
+    throw new Error("Unauthorized: admin access required");
+  }
+  return user;
+}
+
+// Optional helper to check if user is customer
+export async function requireCustomer(): Promise<AuthUser> {
+  const user = await requireAuth();
+  if (user.role !== "CUSTOMER") {
+    throw new Error("Unauthorized: customer access required");
   }
   return user;
 }
