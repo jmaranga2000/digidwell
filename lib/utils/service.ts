@@ -1,102 +1,130 @@
-// lib/utils/service.ts
 import prisma from "../prisma";
-import { z } from "zod";
+import { generateCoverLetter, analyzeResume } from "./ai";
 
-// Service schema validation
-export const serviceSchema = z.object({
-  title: z.string().min(3, "Title is required"),
-  description: z.string().optional(),
-  price: z.number().min(0, "Price must be a positive number").optional(),
-  createdById: z.string(),
-});
+/* ---------------------------- Service Helpers ---------------------------- */
 
-// Subservice schema validation
-export const subserviceSchema = z.object({
-  title: z.string().min(3, "Title is required"),
-  description: z.string().optional(),
-  price: z.number().min(0, "Price must be positive"),
-  serviceId: z.string(),
-  createdById: z.string(),
-});
-
-export async function createService(data: z.infer<typeof serviceSchema>) {
-  const validated = serviceSchema.parse(data);
-  return prisma.service.create({
-    data: validated,
-  });
+export async function createService(data: {
+  title: string;
+  description?: string;
+  price?: number;
+  categoryId?: string;
+  createdById: string;
+}) {
+  return prisma.service.create({ data });
 }
 
 export async function listServices() {
   return prisma.service.findMany({
-    include: {
-      createdBy: true,
-      subservices: true,
-    },
+    include: { category: true, createdBy: true },
   });
 }
 
 export async function getServiceById(id: string) {
-  return prisma.service.findUnique({
-    where: { id },
-    include: {
-      createdBy: true,
-      subservices: true,
+  return prisma.service.findUnique({ where: { id }, include: { subservices: true } });
+}
+
+/* ---------------------------- Subservice Helpers ---------------------------- */
+
+export async function createSubService(data: {
+  title: string;
+  description?: string;
+  price?: number;
+  serviceId: string;
+  createdById: string;
+}) {
+  return prisma.subService.create({ data });
+}
+
+export async function listSubServices(serviceId: string) {
+  return prisma.subService.findMany({ where: { serviceId } });
+}
+
+export async function getSubServiceById(id: string) {
+  return prisma.subService.findUnique({ where: { id } });
+}
+
+/* ------------------------ Resume & Cover Letter ------------------------- */
+
+export async function createResumeBooking(data: {
+  userId: string;
+  subServiceId: string;
+  resumeData: any; // Resume form JSON
+  fileUrl?: string;
+}) {
+  return prisma.booking.create({
+    data: {
+      userId: data.userId,
+      subServiceId: data.subServiceId,
+      status: "PENDING",
+      resumeData: data.resumeData,
+      fileUrl: data.fileUrl,
     },
   });
 }
 
-export async function updateService(
-  serviceId: string,
-  data: Partial<z.infer<typeof serviceSchema>>
+export async function markResumeReady(bookingId: string) {
+  return prisma.booking.update({
+    where: { id: bookingId },
+    data: { status: "READY" },
+  });
+}
+
+export async function payAndUnlockResume(bookingId: string) {
+  return prisma.booking.update({
+    where: { id: bookingId },
+    data: { canDownload: true },
+  });
+}
+
+/* ------------------------ Cover Letter ------------------------- */
+
+export async function createCoverLetter(
+  bookingId: string,
+  input: {
+    jobTitle: string;
+    companyName: string;
+    jobDescription: string;
+    applicantName: string;
+    applicantAddress: string;
+    applicantEmail: string;
+    applicantPhone: string;
+  }
 ) {
-  const validated = serviceSchema.partial().parse(data);
-  return prisma.service.update({
-    where: { id: serviceId },
-    data: validated,
+  // Get resume text from booking
+  const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+  if (!booking || !booking.resumeData) throw new Error("Resume not found");
+
+  const resumeText = JSON.stringify(booking.resumeData);
+
+  // Generate cover letter using AI
+  const coverLetterContent = await generateCoverLetter({
+    resumeText,
+    ...input,
+  });
+
+  // Save to database
+  return prisma.coverLetter.create({
+    data: {
+      bookingId,
+      content: coverLetterContent,
+      status: "PENDING_PAYMENT", // Locked until customer pays
+    },
   });
 }
 
-export async function deleteService(serviceId: string) {
-  return prisma.service.delete({
-    where: { id: serviceId },
+export async function payAndUnlockCoverLetter(coverLetterId: string) {
+  return prisma.coverLetter.update({
+    where: { id: coverLetterId },
+    data: { canDownload: true, status: "PAID" },
   });
 }
 
-// Subservice utilities
-export async function createSubservice(data: z.infer<typeof subserviceSchema>) {
-  const validated = subserviceSchema.parse(data);
-  return prisma.subservice.create({
-    data: validated,
-  });
-}
+/* ------------------------ Resume Analysis ------------------------- */
 
-export async function listSubservices(serviceId: string) {
-  return prisma.subservice.findMany({
-    where: { serviceId },
-    include: { createdBy: true },
-  });
-}
+export async function analyzeBookingResume(bookingId: string, jobDescription: string) {
+  const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+  if (!booking || !booking.resumeData) throw new Error("Resume not found");
 
-export async function getSubserviceById(id: string) {
-  return prisma.subservice.findUnique({
-    where: { id },
-    include: { createdBy: true, service: true },
-  });
-}
-
-export async function updateSubservice(
-  subserviceId: string,
-  data: Partial<z.infer<typeof subserviceSchema>>
-) {
-  const validated = subserviceSchema.partial().parse(data);
-  return prisma.subservice.update({
-    where: { id: subserviceId },
-    data: validated,
-  });
-}
-
-export async function deleteSubservice(subserviceId: string) {
-  return prisma.subservice.delete({
-    where: { id: subserviceId },
-  });
+  const resumeText = JSON.stringify(booking.resumeData);
+  return analyzeResume(resumeText, jobDescription);
 }
