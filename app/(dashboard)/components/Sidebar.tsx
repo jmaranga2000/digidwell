@@ -30,7 +30,7 @@ export default function Sidebar({ open }: SidebarProps) {
 
   return (
     <aside className={`w-64 bg-gray-800 text-white ${open ? "block" : "hidden"}`}>
-      <div className="p-6 font-bold text-xl">DigiDwell</div>
+      <div className="p-6 font-bold text-xl">Digidwell</div>
 
       <nav className="flex flex-col space-y-2 mt-6">
         <Link href="/dashboard" className="px-4 py-2 hover:bg-gray-700 rounded">
