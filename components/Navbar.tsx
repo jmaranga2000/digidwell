@@ -17,7 +17,7 @@ export default function Navbar() {
         <div className="flex items-center space-x-3">
         <Link href="/" className="flex-shrink-0 text-2xl font-bold text-gray-900">
         <Image src="/logo.jpg" alt="logo" width={34}  height={34} />
-          DigiDwell
+          Digidwell
         </Link>
         </div>
 
